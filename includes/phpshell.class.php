@@ -40,6 +40,8 @@ class PHPShell {
      * Initializes PHPShell client.
      */
     public function __construct(){
+        @ob_clean();
+        
         $args=$this->getArgvAssoc();
         
         /*
@@ -95,7 +97,9 @@ class PHPShell {
             
             include 'includes/gui.inc.php';
         }
-       
+        
+        exit;
+        
     }
     
     private $proc;
@@ -108,7 +112,7 @@ class PHPShell {
      * that can feed the client with output and feed the process with client input.
      * @param type $cmd 
      */
-    public function startAsyncProc($cmd){
+    private function startAsyncProc($cmd){
         //Make a unique handle name.
         $handle=md5($cmd.time());
         
@@ -122,12 +126,12 @@ class PHPShell {
         chdir(dirname($GLOBALS['phpshell_path']));
         
         if(PHPShell::isWindows()){
-            pclose(popen("start $c", "r"));
+            pclose(popen("start /MIN $c", "r"));
         } else {
             shell_exec("nohup $c > /dev/null 2>/dev/null &");
         }
         
-        exit;
+        return $handle;
     }
     
     /**
@@ -135,7 +139,7 @@ class PHPShell {
      * 
      * @return type 
      */
-    public function getPhpPath(){
+    private function getPhpPath(){
         $pathTests = array();
         $cachedResultFile = dirname(__FILE__).DIRECTORY_SEPARATOR.'phpshell-phpbin-path';
         
@@ -215,11 +219,7 @@ class PHPShell {
         global $argv,$argc;
         $arguments = array();
         
-        $strOpen=false;
-        
         for($i=0; $i < $argc; $i++){
-            
-            if(!$strOpen)
             $nextIsArg = strpos($argv[$i+1],'-') === 0;
             
             if(strpos($argv[$i],'-') === 0){
@@ -238,7 +238,7 @@ class PHPShell {
      * @param type $pipe
      * @return type 
      */
-    public function getTmpFile($pipe){
+    private function getTmpFile($pipe){
         return dirname(__FILE__).DIRECTORY_SEPARATOR.$this->handle.'-'.$pipe;
     }
     
@@ -246,11 +246,12 @@ class PHPShell {
      * Spawns a new process in that runs indefinetely and pipe output to a tempfile.
      * @param type $cmd 
      */
-    public function spawnProcess($cmd,$handle){
+    private function spawnProcess($cmd,$handle){
         $this->handle = $handle;
         
         file_put_contents($this->getTmpFile('stdout'), '');
         file_put_contents($this->getTmpFile('stdin'),'');
+        
         $descriptors = array(
            0 => array("pipe", "r"),
            1 => array("file", $this->getTmpFile('stdout'),"a"),  // stdout is a pipe that the child will write to
@@ -361,7 +362,7 @@ class PHPShell {
      * @param type $mode proc
      * 
      */
-    public function runCommand($cmd,$mode="shell_exec"){
+    private function runCommand($cmd,$mode="shell_exec"){
         $output = $this->processInternalCommand($cmd);
         
         $pid = 0;
@@ -393,20 +394,21 @@ class PHPShell {
      * Handles suggestion when hitting [TAB] key in the client.
      * @param type $input 
      */
-    public function tabSuggest($input){
+    private function tabSuggest($i){
         $suggestions = array();
-        $input = explode(' ',$input);
+        $input = explode(' ',$i);
         $cmd = '';
         if(count($input) > 1){
             $search = $input[count($input)-1];
             unset($input[count($input)-1]);
             $cmd = implode(' ',$input).' ';
         } else {
-            $search = implode(' ',$input);
+            $search = $input[0];
         }
         foreach(glob("$search*") as $f){
             $suggestions[] = $cmd.$f;
         }
+        $suggestions[] = $input;
         echo json_encode(array('suggestions'=>$suggestions));
         exit;
     }
@@ -418,7 +420,7 @@ class PHPShell {
      * @param type $statement
      * @return type 
      */
-    public function processInternalCommand($statement){
+    private function processInternalCommand($statement){
        global $REGISTERED_FUNCTIONS;
        $statement = explode(' ', $statement,2);
        $cmd = $statement[0];
@@ -438,7 +440,7 @@ class PHPShell {
      * Current working dir, prompt format, motd.
      * @return type 
      */
-    public function getShellInfo(){
+    private function getShellInfo(){
         return array(
             'cwd' => getcwd(),
             'motd' => $this->getMotd(),
@@ -458,7 +460,7 @@ class PHPShell {
      * Return the MOTD for the shell.
      * @return string 
      */
-    public function getMotd(){
+    private function getMotd(){
         $motd = 'PHP-Shell - '.php_uname();
         
         if(isset($GLOBALS['PHPSHELL_CONFIG']['MOTD']))

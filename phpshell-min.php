@@ -38,6 +38,7 @@ $GLOBALS['REGISTERED_FUNCTIONS'][$cmd] = array('function'=>$f,'help'=>$help);
 }
 class PS {
 public function __construct(){
+@ob_clean();
 $args=$this->getArgvAssoc();
 if(isset($args['proc'])){
 print_r($args);
@@ -298,11 +299,12 @@ margin:0px;
 </html>
 <?php
 }
+exit;
 }
 private $proc;
 private $pipes;
 private $handle;
-public function startAsyncProc($cmd){
+private function startAsyncProc($cmd){
 $handle=md5($cmd.time());
 $this->handle = $handle;
 file_put_contents($this->getTmpFile('stdout'), '');
@@ -310,13 +312,13 @@ $c = $this->getPhpPath()." ".$GLOBALS['ps_path']." -handle $handle -proc \"$cmd\
 echo json_encode(array('handle'=>$handle,'cwd'=>getcwd()));
 chdir(dirname($GLOBALS['ps_path']));
 if(PS::iW()){
-pclose(popen("start $c", "r"));
+pclose(popen("start /MIN $c", "r"));
 } else {
 shell_exec("nohup $c > /dev/null 2>/dev/null &");
 }
-exit;
+return $handle;
 }
-public function getPhpPath(){
+private function getPhpPath(){
 $pathTests = array();
 $cachedResultFile = dirname(__FILE__).DIRECTORY_SEPARATOR.'phpshell-phpbin-path';
 if(@isset($GLOBALS['PC']['PHP_PATH'])
@@ -372,9 +374,7 @@ file_put_contents($this->getTmpFile('stdin'), $stdinStr,FILE_APPEND);
 public static function getArgvAssoc(){
 global $argv,$argc;
 $arguments = array();
-$strOpen=false;
 for($i=0; $i < $argc; $i++){
-if(!$strOpen)
 $nextIsArg = strpos($argv[$i+1],'-') === 0;
 if(strpos($argv[$i],'-') === 0){
 $arguments[trim($argv[$i],'-')] = (isset($argv[$i+1]) && !$nextIsArg)
@@ -384,10 +384,10 @@ if(!$nextIsArg) $i++;
 }
 return $arguments;
 }
-public function getTmpFile($pipe){
+private function getTmpFile($pipe){
 return dirname(__FILE__).DIRECTORY_SEPARATOR.$this->handle.'-'.$pipe;
 }
-public function spawnProcess($cmd,$handle){
+private function spawnProcess($cmd,$handle){
 $this->handle = $handle;
 file_put_contents($this->getTmpFile('stdout'), '');
 file_put_contents($this->getTmpFile('stdin'),'');
@@ -458,7 +458,7 @@ $data = iconv($detectedEncoding, 'UTF-8//TRANSLIT//IGNORE', $data);
 }
 echo json_encode(array('stdin' => htmlentities($data,null,'UTF-8'),'eof'=>$eof));
 }
-public function runCommand($cmd,$mode="shell_exec"){
+private function runCommand($cmd,$mode="shell_exec"){
 $output = $this->processInternalCommand($cmd);
 $pid = 0;
 if($output === null && ($mode=="shell_exec" || !$mode) ){
@@ -479,24 +479,25 @@ echo json_encode(array(
 ));
 exit;
 }
-public function tabSuggest($input){
+private function tabSuggest($i){
 $suggestions = array();
-$input = explode(' ',$input);
+$input = explode(' ',$i);
 $cmd = '';
 if(count($input) > 1){
 $search = $input[count($input)-1];
 unset($input[count($input)-1]);
 $cmd = implode(' ',$input).' ';
 } else {
-$search = implode(' ',$input);
+$search = $input[0];
 }
 foreach(glob("$search*") as $f){
 $suggestions[] = $cmd.$f;
 }
+$suggestions[] = $input;
 echo json_encode(array('suggestions'=>$suggestions));
 exit;
 }
-public function processInternalCommand($statement){
+private function processInternalCommand($statement){
 global $REGISTERED_FUNCTIONS;
 $statement = explode(' ', $statement,2);
 $cmd = $statement[0];
@@ -509,7 +510,7 @@ return ob_get_clean();
 }
 return null;
 }
-public function getShellInfo(){
+private function getShellInfo(){
 return array(
 'cwd' => getcwd(),
 'motd' => $this->getMotd(),
@@ -524,7 +525,7 @@ return array(
 'prompt_style' => $GLOBALS['PC'][PS::iW()?'WIN_PROMPT':'NIX_PROMPT']
 );
 }
-public function getMotd(){
+private function getMotd(){
 $motd = 'PHP-Shell - '.php_uname();
 if(isset($GLOBALS['PC']['MOTD']))
 $motd .= "\n\n".$GLOBALS['PC']['MOTD']."\n";
@@ -597,6 +598,32 @@ echo str_pad($i+1,5).htmlentities($data[$i]);
 }
 if(PS::iW())
 rC('ps_tail','tail','Get last lines from file (-n [lc])');
+function ps_txt2art($i,$ret=false){
+$args = PS::strToArgv($i);
+$str = utf8_decode($args[0]);
+$font = @$args[1] ? $args[1] : 5;
+$imW = strlen($str)* imagefontwidth($font);
+$imH = imagefontheight($font);
+$im = imagecreate($imW,$imH);
+$bg = imagecolorallocate($im, 255, 255, 255);
+$textcolor = imagecolorallocate($im, 0, 0, 0);
+$char = @$args[2] ? $args[2] : '#';
+$bgChar = @$args[3] ? $args[3] : ' ';
+imagestring($im, $font, 0, 0, $str, $textcolor);
+$out = '';
+for($y = 0; $y<$imH; $y++){
+for($x = 0; $x < $imW; $x++){
+$out .= (imagecolorat($im, $x, $y) == $textcolor) ? $char: $bgChar;
+}
+$out .= "\n";
+}
+echo $out;
+if($ret)return $out;
+if(file_put_contents('txt2art.out',$out)){
+echo "\nSaved to: txt2art.out";
+}
+}
+rC('ps_txt2art','txt2art','String to "ascii-art"');
 function ps_view($args){
 if(file_exists($args)){
 $ext = pathinfo($args,PATHINFO_EXTENSION);
