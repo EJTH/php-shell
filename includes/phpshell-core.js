@@ -232,7 +232,7 @@ $(function(){
                 writeCwdLine();
                 animateCursor();
             }
-        },"JSON");
+        },"JSON").error(function(r){ write(r.responseText); writeCwdLine(); });
         
 
     }

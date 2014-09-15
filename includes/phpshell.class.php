@@ -356,6 +356,16 @@ class PHPShell {
         echo json_encode(array('stdin' => htmlentities($data,null,'UTF-8'),'eof'=>$eof));
     }
     
+    public static function strToArgv($str, $keepQuotes=false){
+        preg_match_all("#\"[^\"]+\"|'[^']+'|[^ ]++#", $str, $args);
+        
+        $argv = array();
+        foreach($args[0] as $arg){
+            $argv[] = $keepQuotes ? $arg : str_replace(array('"',"'"), '', $arg);
+        }
+        return $argv;
+    }
+    
     /**
      * Run a command be it internal or shell executed
      * @param type $cmd
@@ -396,7 +406,7 @@ class PHPShell {
      */
     private function tabSuggest($i){
         $suggestions = array();
-        $input = explode(' ',$i);
+        $input = self::strToArgv($i);
         $cmd = '';
         if(count($input) > 1){
             $search = $input[count($input)-1];
@@ -405,12 +415,18 @@ class PHPShell {
         } else {
             $search = $input[0];
         }
-        foreach(glob("$search*") as $f){
+        foreach(self::iglob($search) as $f){
+            if(strpos($f,' ') !== false) $f = '"'.$f.'"';
             $suggestions[] = $cmd.$f;
         }
         $suggestions[] = $input;
         echo json_encode(array('suggestions'=>$suggestions));
         exit;
+    }
+    
+    static function iglob($search){
+        $glob = array_merge(glob('*'),glob(pathinfo($search,PATHINFO_DIRNAME).'*'));
+        return preg_grep('#\b'.preg_quote($search,'#').'#i',$glob);
     }
     
     /**
