@@ -14,3 +14,7 @@ While PHP-shell technically isnt an interactive shell it does have somewhat inte
 Extending
 ==
 PHP-shell has a very simple addon system. Take a look at the example addons in the `addons/` folder. You basicly just register PHP callables (eg. functions) with the function `registerCommand()` and voila they are listed in the `help` command and are usable through the shell interface.
+
+It doesn't work
+==
+Well thats unfortunate, maybe take a look at the `phpshell-config.php`. If interactive doesnt work try changing mode with `xsetmode shell_exec`
