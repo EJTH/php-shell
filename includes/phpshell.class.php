@@ -26,8 +26,8 @@ if(@$PHPSHELL_CONFIG['USE_AUTH'] && !isset($args['proc'])){
 /**
  * Use this function to register functions in PHP as commands callable from the PHPShell.
  *
- * @param type $f
- * @param type $cmd
+ * @param type $f callable to use for this command
+ * @param type $cmd command alias
  * @param type $help Description to be listed in 'help' command
  */
 function registerCommand($f,$cmd,$help=''){   

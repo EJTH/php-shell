@@ -3,7 +3,7 @@ $ps_path = __FILE__;
 define('PHPSHELL_EOF_MARK','---EOF');
 $REGISTERED_FUNCTIONS = array();
 $PC = array(
-'MOTD' =>
+'MOTD' => 
 "Thanks for using PHP-Shell.\n".
 "Consider taking a look at the phpshell-config.php\n".
 "Run the build script to make a condensed single-file version of PHPShell.\n\n".
@@ -33,7 +33,7 @@ echo 'Authentication required.';
 exit;
 }
 }
-function rC($f,$cmd,$help=''){
+function rC($f,$cmd,$help=''){ 
 $GLOBALS['REGISTERED_FUNCTIONS'][$cmd] = array('function'=>$f,'help'=>$help);
 }
 class PS {
@@ -273,7 +273,7 @@ SI.cwd = response.cwd;
 writeCwdLine();
 animateCursor();
 }
-},"JSON");
+},"JSON").error(function(r){ write(r.responseText); writeCwdLine(); });
 }
 $('body').click(function(){
 $input.focus();
@@ -287,6 +287,7 @@ writeCwdLine();
 <?php echo $__CSS; ?>
 .input {
 border:none;
+outline-width: 0;
 font-family: monospace;
 font-size:12px;
 padding:0px;
@@ -297,7 +298,7 @@ margin:0px;
 <body>
 </body>
 </html>
-<?php
+<?php 
 }
 exit;
 }
@@ -363,7 +364,7 @@ return 'php';
 private function stdinToProc($stdin,$handle){
 $this->handle = $handle;
 $stdinStr = '';
-foreach($stdin as $n){
+foreach($stdin as $n){ 
 if($n == "\r"){
 $n = "\n";
 }
@@ -377,7 +378,7 @@ $arguments = array();
 for($i=0; $i < $argc; $i++){
 $nextIsArg = strpos($argv[$i+1],'-') === 0;
 if(strpos($argv[$i],'-') === 0){
-$arguments[trim($argv[$i],'-')] = (isset($argv[$i+1]) && !$nextIsArg)
+$arguments[trim($argv[$i],'-')] = (isset($argv[$i+1]) && !$nextIsArg) 
 ? $argv[$i+1] : true;
 if(!$nextIsArg) $i++;
 }
@@ -407,7 +408,7 @@ if(time() - filemtime($this->getTmpFile('stdin')) > 60){
 clearstatcache(true, $this->getTmpFile('stdin'));
 }
 if(time() - filemtime($this->getTmpFile('stdin')) > 60){
-$terminate = true;
+$terminate = true; 
 passthru('pause');
 break;
 }
@@ -458,6 +459,14 @@ $data = iconv($detectedEncoding, 'UTF-8//TRANSLIT//IGNORE', $data);
 }
 echo json_encode(array('stdin' => htmlentities($data,null,'UTF-8'),'eof'=>$eof));
 }
+public static function strToArgv($str, $keepQuotes=false){
+preg_match_all("#\"[^\"]+\"|'[^']+'|[^ ]++#", $str, $args);
+$argv = array();
+foreach($args[0] as $arg){
+$argv[] = $keepQuotes ? $arg : str_replace(array('"',"'"), '', $arg);
+}
+return $argv;
+}
 private function runCommand($cmd,$mode="shell_exec"){
 $output = $this->processInternalCommand($cmd);
 $pid = 0;
@@ -481,7 +490,7 @@ exit;
 }
 private function tabSuggest($i){
 $suggestions = array();
-$input = explode(' ',$i);
+$input = self::strToArgv($i);
 $cmd = '';
 if(count($input) > 1){
 $search = $input[count($input)-1];
@@ -490,10 +499,12 @@ $cmd = implode(' ',$input).' ';
 } else {
 $search = $input[0];
 }
-foreach(glob("$search*") as $f){
+foreach(glob($search.'*') as $f){
+if(is_dir($f)) $f .= DIRECTORY_SEPARATOR;
+if(strpos($f,' ') !== false) $f = '"'.$f.'"';
 $suggestions[] = $cmd.$f;
 }
-$suggestions[] = $input;
+$suggestions[] = $i;
 echo json_encode(array('suggestions'=>$suggestions));
 exit;
 }
@@ -514,16 +525,16 @@ private function getShellInfo(){
 return array(
 'cwd' => getcwd(),
 'motd' => $this->getMotd(),
-'user' => function_exists('posix_getlogin')
-? posix_getlogin()
+'user' => function_exists('posix_getlogin') 
+? posix_getlogin() 
 : (
-(function_exists('shell_exec') && PS::iW())
+(function_exists('shell_exec') && PS::iW()) 
 ? trim(shell_exec('echo %USERNAME%'))
 : '?'
 ),
 'hostname' => gethostname(),
 'prompt_style' => $GLOBALS['PC'][PS::iW()?'WIN_PROMPT':'NIX_PROMPT']
-);
+); 
 }
 private function getMotd(){
 $motd = 'PHP-Shell - '.php_uname();
@@ -537,8 +548,10 @@ return strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
 }
 }
 ?>
-<?php
+<?php   
 function ps_cd($args){
+$args = PS::strToArgv($args);
+$args = $args[0];
 if(file_exists($args))
 chdir($args);
 elseif(file_exists(getcwd().'/'.$args))
@@ -546,11 +559,16 @@ chdir(getcwd().'/'.$args);
 echo 'Changed directory to: '.getcwd();
 }
 rC('ps_cd','cd','Change directory');
-function ps_dl($args){
-$basename = pathinfo($args,PATHINFO_BASENAME);
-file_put_contents($basename, file_get_contents($args));
+function ps_wget($args){
+$args = PS::strToArgv($args);
+if(isset($args[0]) && filter_var($args[0],FILTER_VALIDATE_URL) !== FALSE){
+$filename = $args[1] ? $args[1] : pathinfo($args[0],PATHINFO_FILENAME);
+echo "Downloading: $args[0]...\n";
+file_put_contents($filename, file_get_contents($args[0]));
+echo "Saved download as '$filename'\n";
+} else echo "Invalid url\n";
 }
-rC('ps_dl','dl','Download file from http or ftp');
+rC('ps_wget','dl','Download file \'dl source dest\'');
 function ps_eval($args){
 if(preg_match('#;|echo\b|print[ (]|return#', $args))
 eval($args);
@@ -571,6 +589,27 @@ echo count(file($args));
 }
 if(PS::iW())
 rC('ps_lc','lc','line count');
+function _ls_formatbytes($bytes, $precision = 2) { 
+$units = array('B ', 'KB', 'MB', 'GB', 'TB'); 
+$bytes = max($bytes, 0); 
+$pow = floor(($bytes ? log($bytes) : 0) / log(1024)); 
+$pow = min($pow, count($units) - 1); 
+$bytes /= pow(1024, $pow);
+return round($bytes, $precision) . ' ' . $units[$pow]; 
+} 
+function ps_ls($ls){
+foreach(glob($ls ? $ls : '*') as $file){
+echo str_pad(
+is_dir($file) 
+? '--DIR--' 
+: _ls_formatbytes(filesize($file)),10,' ',STR_PAD_LEFT) 
+. " " . $file . "\n";
+}
+}
+if(PS::iW())
+rC('ps_ls','ls','List directory content');
+else
+rC('ps_ls','list','List directory content');
 function ps_prntscrn($args){
 echo '<img src="?printscreen='.time().'" alt="[LOADING SCREENSHOT]" style="max-width:80%" />';
 }
@@ -636,11 +675,6 @@ case 'gif':
 $info = getimagesize($args);
 echo '<img src="?view_img='.urlencode(realpath($args)).'" style="max-width:80%" />';
 echo "\n$info[mime] ($info[0] x $info[1])";
-break;
-case 'php':
-echo '<div style="background:#eee; max-height:400px; overflow:auto;">';
-highlight_file($args, false);
-echo '</div>';
 break;
 default:
 $lines = file($args);

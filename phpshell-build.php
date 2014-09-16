@@ -5,7 +5,10 @@
     $BUILD_DATE = date('Y/m/d');
     $URL = 'http://github.com/EJTH/PHP-Shell';
     
-    echo "<?php /* PHPSHELL - $BUILD_DATE - $URL */ ";
+    $revision = (int)file_get_contents('build');
+    $revision++;
+    
+    echo "<?php /* PHPSHELL - (Build: $revision $BUILD_DATE - $URL */ ";
     echo "\n\$phpshell_path = __FILE__;\n";
     
     function recursiveInclude($f){
@@ -84,4 +87,7 @@
     
     $contents = str_replace(array_keys($replacements), array_values($replacements), $contents);
     echo $contents;
+    
+    //Save bumped revision on success
+    file_put_contents('build', $revision);
 ?>

@@ -13,12 +13,6 @@ function phpshell_view($args){
                 echo "\n$info[mime] ($info[0] x $info[1])";
                 
             break;
-            case 'php':
-
-                echo '<div style="background:#eee; max-height:400px; overflow:auto;">';
-                highlight_file($args, false);
-                echo '</div>';
-            break;
             default:
                 $lines = file($args);
                 foreach($lines as $l => $s){
