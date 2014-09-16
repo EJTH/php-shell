@@ -498,6 +498,10 @@ unset($input[count($input)-1]);
 $cmd = implode(' ',$input).' ';
 } else {
 $search = $input[0];
+if(preg_match("#[ ]$#", $i)){
+$search = '';
+$cmd = $input[0].' ';
+}
 }
 foreach(glob($search.'*') as $f){
 if(is_dir($f)) $f .= DIRECTORY_SEPARATOR;
