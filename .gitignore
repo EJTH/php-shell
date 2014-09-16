@@ -1,7 +1,8 @@
 #################
 ## Eclipse
 #################
-
+*-stdin
+*-stdout
 *.pydevproject
 .project
 .metadata
@@ -214,3 +215,4 @@ pip-log.txt
 #Mr Developer
 .mr.developer.cfg
 /nbproject/private/
+includes/phpshell-phpbin-path

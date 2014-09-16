@@ -17,6 +17,8 @@
             <?php echo $__CSS; ?>
             .input {
                 border:none;
+                outline-width: 0;
+
                 font-family: monospace;
                 font-size:12px;
                 padding:0px;

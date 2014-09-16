@@ -415,19 +415,22 @@ class PHPShell {
         } else {
             $search = $input[0];
         }
-        foreach(self::iglob($search) as $f){
+        foreach(glob($search.'*') as $f){
+            //append directory separator on dirs
+            if(is_dir($f)) $f .= DIRECTORY_SEPARATOR;
+            
+            //Encapsulate result in quotes if it contains whitespace
             if(strpos($f,' ') !== false) $f = '"'.$f.'"';
+            
             $suggestions[] = $cmd.$f;
         }
-        $suggestions[] = $input;
+        
+        $suggestions[] = $i;
+        
         echo json_encode(array('suggestions'=>$suggestions));
         exit;
     }
     
-    static function iglob($search){
-        $glob = array_merge(glob('*'),glob(pathinfo($search,PATHINFO_DIRNAME).'*'));
-        return preg_grep('#\b'.preg_quote($search,'#').'#i',$glob);
-    }
     
     /**
      * Checks if a command is an internal one, executes it if it is, returns null 
