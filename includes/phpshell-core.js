@@ -3,8 +3,8 @@ $(function(){
     var history = [];
     var currentHistory = 0;
     var $pre = $('<pre>');
-    var mode = 'interactive-stdin';
-    var supportedModes = ['interactive-stdin','shell_exec'];
+    var mode = 'interactive';
+    var supportedModes = ['interactive','shell_exec'];
     
     $('body').append($pre);
     var $output = $('<span class="output"></span>');
@@ -222,7 +222,7 @@ $(function(){
         
         /* ... If command is not recognized as client side, then send to server */
         $.post(window.location.href,{action:'exec',cwd:SHELL_INFO.cwd,cmd:statement,mode:mode},function(response){
-            if(mode == "interactive-stdin" && response.handle){
+            if(mode == "interactive" && response.handle){
                 currentHandle = response.handle;
                 procStdIn = [];
                 readProc();

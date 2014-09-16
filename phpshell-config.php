@@ -25,7 +25,7 @@ $PHPSHELL_CONFIG = array(
      *                    This works as long as shell_exe isn't disabled.
      *                    Downside is that interactive-stdin is not possible.
      * 
-     * interactive-stdin  proc_open will be used together with some dark php 
+     * interactive        proc_open will be used together with some dark php 
      *                    magic to give a very rough interactive support
      *                    through simple stdin pipes. tty programs will
      *                    not work as expected, if at all.

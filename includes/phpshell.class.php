@@ -382,7 +382,7 @@ class PHPShell {
             
             if($output === null) $output = 'Command not found';
             else $output = htmlspecialchars ($output,null,'UTF-8');
-        } elseif($mode == "interactive-stdin" && $output === null) {
+        } elseif($mode == "interactive" && $output === null) {
             $this->startAsyncProc($cmd);
             exit;
         }
