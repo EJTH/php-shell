@@ -10,3 +10,7 @@ It is also a wannabe shell for your browser based on PHP, it is compact and come
 Interactive support
 ==
 While PHP-shell technically isnt an interactive shell it does have somewhat interactive support
+
+Extending
+==
+PHP-shell has a very simple addon system. Take a look at the example addons in the `addons/` folder. You basicly just register PHP callables (eg. functions) with the function `registerCommand()` and voila they are listed in the `help` command and are usable through the shell interface.
