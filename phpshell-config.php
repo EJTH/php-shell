@@ -1,5 +1,5 @@
 <?php
-$PHPSHELL_CONFIG = array(
+$GLOBALS['PHPSHELL_CONFIG'] = array(
     
     /*
      * A MOTD to users
