@@ -53,7 +53,11 @@ $PHPSHELL_CONFIG = array(
      */
     'USE_AUTH'          => true,
     'AUTH_USERNAME'     => 'phpshell',
-    'AUTH_PASSWORD'     => 'phpshell'
+    'AUTH_PASSWORD'     => 'phpshell',
+    
+    'ENV' => array(
+      'PATH' => getenv('PATH')
+    )
     
 );
 ?>

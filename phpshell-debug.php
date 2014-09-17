@@ -1,10 +1,10 @@
 <?php
     //Add phpshell.class.php
     include 'includes/phpshell.class.php';
-    $__JS = '';
-    $__CSS = '';
+    $GLOBALS['__CSS'] = '';
+    $GLOBALS['__JS'] = '';
     
-    $phpshell_path = __FILE__;
+    $GLOBALS['phpshell_path'] = __FILE__;
     
     $it = new RecursiveDirectoryIterator("addons/");
     
@@ -16,14 +16,14 @@
                 include $file;
             break;
             case 'css':
-                $__CSS .= file_get_contents($file);
+                @$GLOBALS['__CSS'] .= file_get_contents($file);
             break;
             case 'js':
-                $__JS .= file_get_contents($file);
+                @$GLOBALS['__JS'] .= file_get_contents($file);
             break;
         }
     }
     
-    $phpshell = new PHPShell();
+    $GLOBALS['phpshell'] = new PHPShell();
     
 ?>

@@ -11,10 +11,10 @@
         </script>
         <script type="text/javascript">
             <?php include 'includes/phpshell-core.js'; ?>
-            <?php echo @$__JS; ?>
+            <?php echo @$GLOBALS['__JS']; ?>
         </script>
         <style>
-            <?php echo $__CSS; ?>
+            <?php echo @$GLOBALS['__CSS']; ?>
             .input {
                 border:none;
                 outline-width: 0;

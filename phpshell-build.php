@@ -53,10 +53,10 @@
         }
     }
     
-    echo "\n\$__JS = <<<JSHERE\n".  $JS."\nJSHERE;\n";
-    echo "\n\$__CSS = <<<CSSHERE\n". $CSS."\nCSSHERE;\n";
+    echo "\n\$GLOBALS['__JS'] = <<<JSHERE\n".  $JS."\nJSHERE;\n";
+    echo "\n\$GLOBALS['__CSS'] = <<<CSSHERE\n". $CSS."\nCSSHERE;\n";
 
-    echo '$phpshell = new PHPShell(); ?>';
+    echo '$GLOBALS[\'phpshell\'] = new PHPShell(); ?>';
     
     $contents = ob_get_clean();
     

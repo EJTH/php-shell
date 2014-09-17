@@ -5,7 +5,7 @@ $REGISTERED_FUNCTIONS = array();
 include 'phpshell-config.php';
 
 $args=PHPShell::getArgvAssoc();
-if(@$PHPSHELL_CONFIG['USE_AUTH'] && !isset($args['proc'])){
+if(@$GLOBALS['PHPSHELL_CONFIG']['USE_AUTH'] && !isset($args['proc'])){
     if (!isset($_SERVER['PHP_AUTH_USER'])) {
         header('WWW-Authenticate: Basic realm="My Realm"');
         header('HTTP/1.0 401 Unauthorized');
@@ -13,8 +13,8 @@ if(@$PHPSHELL_CONFIG['USE_AUTH'] && !isset($args['proc'])){
         exit;
     }
     
-    if($_SERVER['PHP_AUTH_USER'] != @$PHPSHELL_CONFIG['AUTH_USERNAME']
-       || $_SERVER['PHP_AUTH_PW'] != @$PHPSHELL_CONFIG['AUTH_PASSWORD'])
+    if($_SERVER['PHP_AUTH_USER']  != @$GLOBALS['PHPSHELL_CONFIG']['AUTH_USERNAME']
+       || $_SERVER['PHP_AUTH_PW'] != @$GLOBALS['PHPSHELL_CONFIG']['AUTH_PASSWORD'])
     {
         header('WWW-Authenticate: Basic realm="My Realm"');
         header('HTTP/1.0 401 Unauthorized');
@@ -150,8 +150,10 @@ class PHPShell {
         }
         
         /* Check saved result of last getPhpPath, if it exists, return it */
-        if(file_exists($cachedResultFile)){
-            return file_get_contents($cachedResultFile);
+        if(file_exists($cachedResultFile) 
+            && $cachedPhpPath = file_get_contents($cachedResultFile)
+            && file_exists($cachedPhpPath)){
+            return $cachedPhpPath;
         } else {
             if(PHPShell::isWindows()){
                 $pathTests = array(
@@ -198,13 +200,8 @@ class PHPShell {
      */
     private function stdinToProc($stdin,$handle){
         $this->handle = $handle;
-        $stdinStr = '';
-        foreach($stdin as $n){            
-            if($n == "\r"){
-                $n = "\n";
-            }
-            $stdinStr .= $n;
-        }
+        $stdinStr = str_replace("\r", "\n", $stdin);
+        
         file_put_contents($this->getTmpFile('stdin'), $stdinStr,FILE_APPEND);
     }
     
@@ -258,6 +255,10 @@ class PHPShell {
            2 => array("file", $this->getTmpFile('stdout'),"a"), // stderr is a file to write to
         );
       
+        foreach($GLOBALS['PHPSHELL_CONFIG']['env'] as $k => $env){
+          putenv("$k=$env");
+        }
+        
         //Run the command
         $this->proc = proc_open($cmd, $descriptors, $this->pipes, getcwd());
         
@@ -275,8 +276,7 @@ class PHPShell {
                 clearstatcache(true, $this->getTmpFile('stdin'));
             }
             if(time() - filemtime($this->getTmpFile('stdin')) > 60){
-                $terminate = true;          
-                passthru('pause');
+                $terminate = true;
                 break;
             }
             
