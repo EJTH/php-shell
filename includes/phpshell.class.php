@@ -255,7 +255,7 @@ class PHPShell {
            2 => array("file", $this->getTmpFile('stdout'),"a"), // stderr is a file to write to
         );
       
-        foreach($GLOBALS['PHPSHELL_CONFIG']['env'] as $k => $env){
+        foreach($GLOBALS['PHPSHELL_CONFIG']['ENV'] as $k => $env){
           putenv("$k=$env");
         }
         

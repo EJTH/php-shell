@@ -56,7 +56,7 @@ $GLOBALS['PHPSHELL_CONFIG'] = array(
     'AUTH_PASSWORD'     => 'phpshell',
     
     'ENV' => array(
-      'PATH' => getenv('PATH')
+      'PATH' => getenv('PATH').':/usr/local/bin/'
     )
     
 );
