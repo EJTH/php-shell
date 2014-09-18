@@ -56,7 +56,8 @@ $GLOBALS['PHPSHELL_CONFIG'] = array(
     'AUTH_PASSWORD'     => 'phpshell',
     
     'ENV' => array(
-      'PATH' => getenv('PATH').':/usr/local/bin/'
+      'TERM' => 'dumb',
+      'PATH' => "Users/ET/.composer/vendor/bin:/usr/local/bin:/Applications/MAMP/bin/php/php5.5.14/bin/:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/"
     )
     
 );

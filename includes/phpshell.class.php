@@ -120,7 +120,18 @@ class PHPShell {
         
         file_put_contents($this->getTmpFile('stdout'), '');
         
-        $c = $this->getPhpPath()." ".$GLOBALS['phpshell_path']." -handle $handle -proc \"$cmd\" -cwd \"".getcwd()."\"";
+        $args = array(
+            'handle' => $handle,
+            'proc'   => $cmd,
+            'cwd'    => getcwd()
+        );
+        
+        $c =  //PHP executable path
+              $this->getPhpPath()." "
+              //Self path
+              . $GLOBALS['phpshell_path']
+              //Arguments
+              . self::arrayToArgs($args);// " -handle $handle -proc \"$cmd\" -cwd \"".getcwd()."\"";
         
         echo json_encode(array('handle'=>$handle,'cwd'=>getcwd()));
         chdir(dirname($GLOBALS['phpshell_path']));
@@ -132,6 +143,15 @@ class PHPShell {
         }
         
         return $handle;
+    }
+    
+    private static function arrayToArgs($arrArgs){
+      $str = '';
+      foreach($arrArgs as $k => $v){
+          $v = escapeshellarg($v);
+          $str .= " -$k \"$v\"";
+      }
+      return $str;
     }
     
     /**
