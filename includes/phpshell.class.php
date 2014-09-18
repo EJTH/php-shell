@@ -5,7 +5,8 @@ $REGISTERED_FUNCTIONS = array();
 include 'phpshell-config.php';
 
 $args=PHPShell::getArgvAssoc();
-if(@$GLOBALS['PHPSHELL_CONFIG']['USE_AUTH'] && !isset($args['proc'])){
+
+if(@$GLOBALS['PHPSHELL_CONFIG']['USE_AUTH'] && !isset($args['cmd'])){
     if (!isset($_SERVER['PHP_AUTH_USER'])) {
         header('WWW-Authenticate: Basic realm="My Realm"');
         header('HTTP/1.0 401 Unauthorized');
@@ -49,15 +50,14 @@ class PHPShell {
          * Client disconnects. using ampersand to spawn a new thread on nix 
          * systems and by using start command on windows.
          */
-        if(isset($args['proc'])){
+        if(isset($args['cmd'])){
             print_r($args);
             print_r($GLOBALS['argv']);
             
             //Appending DIRECTORY_SEPERATOR because a bug in argv.
             chdir(realpath($args['cwd']).DIRECTORY_SEPARATOR);
             
-            $args['proc'] = $args['proc'];
-            $this->spawnProcess($args['proc'],$args['handle']);
+            $this->spawnProcess($args['cmd'],$args['handle']);
             exit;
         }
         
@@ -114,7 +114,7 @@ class PHPShell {
      */
     private function startAsyncProc($cmd){
         //Make a unique handle name.
-        $handle=md5($cmd.time());
+        $handle = md5($cmd.time());
         
         $this->handle = $handle;
         
@@ -122,7 +122,7 @@ class PHPShell {
         
         $args = array(
             'handle' => $handle,
-            'proc'   => $cmd,
+            'cmd'   => $cmd,
             'cwd'    => getcwd()
         );
         
@@ -395,7 +395,6 @@ class PHPShell {
     private function runCommand($cmd,$mode="shell_exec"){
         $output = $this->processInternalCommand($cmd);
         
-        $pid = 0;
         if($output === null && ($mode=="shell_exec" || !$mode) ){
             $output = shell_exec($_REQUEST['cmd'].' 2>&1');
             
