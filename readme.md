@@ -17,4 +17,4 @@ PHP-shell has a very simple addon system. Take a look at the example addons in t
 
 It doesn't work
 ==
-Well thats unfortunate, maybe take a look at the `phpshell-config.php`. If interactive doesnt work try changing mode with `xsetmode shell_exec`
+Well thats unfortunate, maybe take a look at the `phpshell-config.php`. If interactive doesnt work try changing mode with `xsetmode shell_exec`. If everything else fails, then please do feel free to create an issue regarding your problem.
