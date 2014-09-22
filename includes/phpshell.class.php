@@ -131,7 +131,7 @@ class PHPShell {
               //Self path
               . $GLOBALS['phpshell_path']
               //Arguments
-              . self::arrayToArgs($args);// " -handle $handle -proc \"$cmd\" -cwd \"".getcwd()."\"";
+              . self::arrayToArgs($args);
         
         echo json_encode(array('handle'=>$handle,'cwd'=>getcwd()));
         chdir(dirname($GLOBALS['phpshell_path']));
@@ -149,7 +149,7 @@ class PHPShell {
       $str = '';
       foreach($arrArgs as $k => $v){
           $v = escapeshellarg($v);
-          $str .= " -$k \"$v\"";
+          $str .= " -$k $v";
       }
       return $str;
     }
@@ -164,15 +164,14 @@ class PHPShell {
         $cachedResultFile = dirname(__FILE__).DIRECTORY_SEPARATOR.'phpshell-phpbin-path';
         
         /* Return the path from config, if its specified. */
-        if(@isset($GLOBALS['PHPSHELL_CONFIG']['PHP_PATH'])
+        if(isset($GLOBALS['PHPSHELL_CONFIG']['PHP_PATH'])
            && file_exists($GLOBALS['PHPSHELL_CONFIG']['PHP_PATH'])){
             return $GLOBALS['PHPSHELL_CONFIG']['PHP_PATH'];
         }
         
         /* Check saved result of last getPhpPath, if it exists, return it */
-        if(file_exists($cachedResultFile) 
-            && $cachedPhpPath = file_get_contents($cachedResultFile)
-            && file_exists($cachedPhpPath)){
+        $cachedPhpPath = @file_get_contents($cachedResultFile);
+        if($cachedPhpPath){
             return $cachedPhpPath;
         } else {
             if(PHPShell::isWindows()){
@@ -192,7 +191,8 @@ class PHPShell {
                     '/bin/php',
                     '/bin/php-cli',
                     '/usr/bin/php',
-                    '/usr/bin/php-cli'
+                    '/usr/bin/php-cli',
+                    '/Applications/MAMP/php/php',
                 );
             }
             
@@ -275,7 +275,7 @@ class PHPShell {
            2 => array("file", $this->getTmpFile('stdout'),"a"), // stderr is a file to write to
         );
       
-        foreach($GLOBALS['PHPSHELL_CONFIG']['ENV'] as $k => $env){
+        foreach($GLOBALS['PHPSHELL_CONFIG'][self::isWindows()?'WIN':'NIX']['ENV'] as $k => $env){
           putenv("$k=$env");
         }
         
@@ -283,7 +283,7 @@ class PHPShell {
         $this->proc = proc_open($cmd, $descriptors, $this->pipes, getcwd());
         
         //Wait a little for the process to open and begin filling stdout
-        usleep(250000);
+        //usleep(250000);
         
         $pinfo = proc_get_status($this->proc);
         $terminate = false;
@@ -315,17 +315,14 @@ class PHPShell {
             $pinfo = proc_get_status($this->proc);
             
         }
-        
         proc_close($this->proc);
         
-        if($terminate){
-           //Remove stdout file since it is never going to be read anyway because
-           //the client timed out.
-           @unlink($this->getTmpFile('stdout'));
-        } else {
-            //Indicate to the client that the proc has ended.
+        if(!$terminate){
+            //Indicate to the client that the process has ended.
             file_put_contents($this->getTmpFile('stdout'),PHPSHELL_EOF_MARK,FILE_APPEND);
+            sleep(1);
         }
+        @unlink($this->getTmpFile('stdout'));
         
         
         //remove stdin file:
@@ -373,7 +370,7 @@ class PHPShell {
             $data = iconv($detectedEncoding, 'UTF-8//TRANSLIT//IGNORE', $data);
         }
 
-        echo json_encode(array('stdin' => htmlentities($data,null,'UTF-8'),'eof'=>$eof));
+        echo json_encode(array('out' => htmlentities($data,null,'UTF-8'),'eof'=>$eof));
     }
     
     public static function strToArgv($str, $keepQuotes=false){
