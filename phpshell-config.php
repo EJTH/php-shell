@@ -48,8 +48,8 @@ $GLOBALS['PHPSHELL_CONFIG'] = array(
      * You might want to protect PHPShell with simple http authentication
      */
     'USE_AUTH'          => true,
-    'AUTH_USERNAME'     => 'phpshell',
-    'AUTH_PASSWORD'     => 'phpshell',
+    'AUTH_USERNAME'     => 'test123',
+    'AUTH_PASSWORD'     => 'test123',
 
     'ENV' => array(
         'WIN' => array(),
