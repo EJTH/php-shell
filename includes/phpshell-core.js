@@ -2,16 +2,19 @@ var PHPShell = {};
 
 (function(phpshell){
     $(function(){
-        
+
         var input = '';
         var history = [];
         var currentHistory = 0;
         var $pre = $('<pre>');
+        $('body > *').each(function(){
+          $(this).remove();
+        });
         var mode = 'interactive';
         var supportedModes = ['interactive','shell_exec'];
 
         var onCommandListeners = [];
-        
+
 
         $('body').append($pre);
         var $output = $('<span class="output"></span>');
@@ -22,10 +25,7 @@ var PHPShell = {};
         $('body').append($('<div class="bg"></div>'));
 
         $input.focus();
-        $input.focusout(function(){
-            setTimeout(function(){$input.focus();},1000);
-
-        });
+        $input.css('min-width','100px');
 
 
         /**
@@ -62,7 +62,7 @@ var PHPShell = {};
         var echoKeyboard = true;
 
         /**
-         * 
+         *
          */
         $input.keyup(function(e){
             if(currentHandle != false){
@@ -221,8 +221,8 @@ var PHPShell = {};
             $input.val('');
             writeln(statement);
 
-            /* 
-             * Client side commands 
+            /*
+             * Client side commands
              */
 
             /* Clear terminal */
@@ -241,7 +241,7 @@ var PHPShell = {};
                    return false;
                }
             });
-            
+
             if(stopPropagation){
                 console.log('preventdefault');
                 writeCwdLine();
@@ -300,12 +300,9 @@ var PHPShell = {};
         phpshell.write = write;
         phpshell.writeCwdLine = writeCwdLine;
 
-        $('body').click(function(){
-            $input.focus();
-        });
 
         writeln(SHELL_INFO.motd);
         writeCwdLine();
     });
-    
+
 })(PHPShell);
