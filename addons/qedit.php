@@ -1,7 +1,7 @@
 <?php
 function phpshell_qedit($args){
 
-    echo '<div class="qedit" data-file="'.htmlentities($args).'"><textarea>'.htmlentities(@file_get_contents(realpath($args))).'</textarea><button class="save">Save</button></div>';
+    echo '<div class="qedit" data-file="'.htmlentities($args).'"><textarea>'.@str_replace(['<','>'],['&lt;','&gt;'],file_get_contents(realpath($args))).'</textarea><button class="save">Save</button></div>';
 
 
 }
