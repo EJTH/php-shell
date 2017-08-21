@@ -5,6 +5,11 @@ var PHPShell = {};
         
         var input = '';
         var history = [];
+        
+        try {
+          history = JSON.parse(localStorage.getItem('hist')) || [];
+        } catch(e){}
+        
         var currentHistory = 0;
         var $pre = $('<pre>');
         var mode = 'interactive';
@@ -217,6 +222,7 @@ var PHPShell = {};
         function runStatement(){
             var statement = $input.val();
             history.push(statement);
+            localStorage.setItem('hist', JSON.stringify(history));
             currentHistory = 0;
             $input.val('');
             writeln(statement);
