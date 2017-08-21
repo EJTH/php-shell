@@ -491,7 +491,7 @@ class PHPShell {
                     ? trim(shell_exec('echo %USERNAME%'))
                     : '?'
                   ),
-            'hostname' => gethostname(),
+            'hostname' => function_exists('gethostname') ? gethostname() : 'unknown-host',
             'prompt_style' => $GLOBALS['PHPSHELL_CONFIG'][PHPShell::isWindows()?'WIN_PROMPT':'NIX_PROMPT']
         );  
     }
