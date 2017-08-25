@@ -5,9 +5,9 @@
         <title>PHPShell</title>
         <script type="text/javascript" src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
         <script type="text/javascript">
-            //Variables from PHP
+            // Variables from PHP
             var SHELL_INFO = <?php echo json_encode($this->getShellInfo());?>;
-            
+
         </script>
         <script type="text/javascript">
             <?php include 'includes/phpshell-core.js'; ?>
@@ -27,6 +27,6 @@
         </style>
     </head>
     <body>
-        
+
     </body>
 </html>

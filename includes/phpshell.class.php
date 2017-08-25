@@ -1,6 +1,6 @@
 <?php
 define('PHPSHELL_EOF_MARK','---EOF');
-$REGISTERED_FUNCTIONS = array();
+$GLOBALS['REGISTERED_FUNCTIONS'] = array();
 
 include 'phpshell-config.php';
 
@@ -59,7 +59,7 @@ class PHPShell {
     public function __construct(){
         @ob_clean();
 
-        $args=$this->getArgvAssoc();
+        $args=$this::getArgvAssoc();
 
         /*
          * Open a new process and keep it running even though
@@ -106,7 +106,7 @@ class PHPShell {
             $__JS = $GLOBALS['__JS'];
             $__PHPSHELL_CONFIG = $GLOBALS['PHPSHELL_CONFIG'];
 
-            //Hide these variables from the js variables.
+            // Hide these variables from the js variables.
             unset($__PHPSHELL_CONFIG['AUTH_USERNAME']);
             unset($__PHPSHELL_CONFIG['AUTH_PASSWORD']);
 
@@ -129,7 +129,7 @@ class PHPShell {
      * @param type $cmd
      */
     private function startAsyncProc($cmd){
-        //Make a unique handle name.
+        // Make a unique handle name.
         $handle = md5($cmd.time());
 
         $this->handle = $handle;
@@ -142,11 +142,11 @@ class PHPShell {
             'cwd'    => getcwd()
         );
 
-        $c =  //PHP executable path
+        $c =  // PHP executable path
               $this->getPhpPath()." "
-              //Self path
+              // Self path
               . $GLOBALS['phpshell_path']
-              //Arguments
+              // Arguments
               . self::arrayToArgs($args);
 
         echo json_encode(array('handle'=>$handle,'cwd'=>getcwd()));
@@ -287,27 +287,27 @@ class PHPShell {
 
         $descriptors = array(
            0 => array("pipe", "r"),
-           1 => array("file", $this->getTmpFile('stdout'),"a"),  // stdout is a pipe that the child will write to
-           2 => array("file", $this->getTmpFile('stdout'),"a"), // stderr is a file to write to
+           1 => array("file", $this->getTmpFile('stdout'),"a"),  //  stdout is a pipe that the child will write to
+           2 => array("file", $this->getTmpFile('stdout'),"a"), //  stderr is a file to write to
         );
 
         foreach($GLOBALS['PHPSHELL_CONFIG'][self::isWindows()?'WIN':'NIX']['ENV'] as $k => $env){
           putenv("$k=$env");
         }
 
-        //Run the command
+        // Run the command
         $this->proc = proc_open($cmd, $descriptors, $this->pipes, getcwd());
 
-        //Wait a little for the process to open and begin filling stdout
-        //usleep(250000);
+        // Wait a little for the process to open and begin filling stdout
+        // usleep(250000);
 
         $pinfo = proc_get_status($this->proc);
         $terminate = false;
         while($pinfo['running']){
             echo '.';
 
-            //End process on client timeout
-            //first clear statcache if long enough time has passed since the last stat
+            // End process on client timeout
+            // first clear statcache if long enough time has passed since the last stat
             if(time() - filemtime($this->getTmpFile('stdin')) > 60){
                 clearstatcache(true, $this->getTmpFile('stdin'));
             }
@@ -334,14 +334,14 @@ class PHPShell {
         proc_close($this->proc);
 
         if(!$terminate){
-            //Indicate to the client that the process has ended.
+            // Indicate to the client that the process has ended.
             file_put_contents($this->getTmpFile('stdout'),PHPSHELL_EOF_MARK,FILE_APPEND);
             sleep(1);
         }
         @unlink($this->getTmpFile('stdout'));
 
 
-        //remove stdin file:
+        // remove stdin file:
         @unlink($this->getTmpFile('stdin'));
 
     }
@@ -366,8 +366,8 @@ class PHPShell {
 
             usleep (500000);
 
-            //Touch the stdin file once in a while, this indicates
-            //to the process running that the client is still alive.
+            // Touch the stdin file once in a while, this indicates
+            // to the process running that the client is still alive.
             if($touchCounter == 0){
                 $touchCounter = 30;
                 touch($this->getTmpFile('stdin'));
@@ -407,7 +407,9 @@ class PHPShell {
      */
     private function runCommand($cmd,$mode="shell_exec"){
         $output = $this->processInternalCommand($cmd);
+        $html = true;
         if($output === null){
+          $html = false;
           if($mode=="shell_exec" || !$mode){
               $output = shell_exec($_REQUEST['cmd'].' 2>&1');
           } elseif($mode=="exec") {
@@ -419,8 +421,6 @@ class PHPShell {
               $this->startAsyncProc($cmd);
               exit;
           }
-        } else {
-          $html = true;
         }
 
         $detectedEncoding = mb_detect_encoding($output,  mb_list_encodings(),true);
@@ -460,7 +460,7 @@ class PHPShell {
             //append directory separator on dirs
             if(is_dir($f)) $f .= DIRECTORY_SEPARATOR;
 
-            //Encapsulate result in quotes if it contains whitespace
+            // Encapsulate result in quotes if it contains whitespace
             if(strpos($f,' ') !== false) $f = '"'.$f.'"';
 
             $suggestions[] = $cmd.$f;
@@ -476,18 +476,18 @@ class PHPShell {
     /**
      * Checks if a command is an internal one, executes it if it is, returns null
      * if it isnt.
-     * @global array $REGISTERED_FUNCTIONS
+     * @global array $GLOBALS['REGISTERED_FUNCTIONS']
      * @param type $statement
      * @return type
      */
     private function processInternalCommand($statement){
-       global $REGISTERED_FUNCTIONS;
+
        $statement = explode(' ', $statement,2);
        $cmd = $statement[0];
        $args = @$statement[1];
-       if(isset($REGISTERED_FUNCTIONS[$cmd])){
+       if(isset($GLOBALS['REGISTERED_FUNCTIONS'][$cmd])){
            ob_start();
-           $commandFunc = $REGISTERED_FUNCTIONS[$cmd]['function'];
+           $commandFunc = $GLOBALS['REGISTERED_FUNCTIONS'][$cmd]['function'];
            $commandFunc($args);
            return ob_get_clean();
        }

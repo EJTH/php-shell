@@ -63,7 +63,7 @@ var PHPShell = {};
          */
         var lastKey = 0;
 
-        //xecho
+        // xecho
         var echoKeyboard = true;
 
         /**
