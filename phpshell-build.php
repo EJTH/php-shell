@@ -15,7 +15,7 @@
         $ret = '';
         if($f){
 
-            $ret = '/*'.$f.': */ ?>';
+            $ret = '/* '.$f.': */ ?>';
             $ret .= replaceIncludes(file_get_contents($f));
             $ret .= '<?php ';
         }
