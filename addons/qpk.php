@@ -14,10 +14,11 @@ function phpshell_qpk($args){
       if(!file_exists($addon_path)) mkdir($addon_path);
       if(file_exists($addon_path)){
         error_reporting(E_ALL);
-        if( copy($addon,$addon_path . $args[1]) ){
+        if( copy($addon,$addon_path . $args[1] . '.php') ){
           echo "Installed $addon";
+        } else {
+          echo "Failed to install $addon";
         }
-        echo "Failed to install $addon";
       } else {
         echo "No addon folder found. Please create writeable directory at $addon_path";
       }

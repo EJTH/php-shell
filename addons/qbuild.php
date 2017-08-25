@@ -4,6 +4,8 @@ function phpshell_build_util($args){
   $replace = in_array('--replace', $args);
   $keep = in_array('--keep', $args);
 
+  $gz = in_array('--gz', $args);
+
   $addons = array();
   $without = in_array('without', $args);
   $with = in_array('with', $args);
@@ -55,7 +57,12 @@ function phpshell_build_util($args){
     passthru("cd $build_dir/ && rm -f phpshell-min.php phpshell-min-gz.php && php phpshell-build.php && echo Succesfully build");
     passthru('pwd');
     if($dest){
-      copy("$build_dir/phpshell-min.php", $dest);
+      if(!$gz){
+        copy("$build_dir/phpshell-min.php", $dest);
+      } else {
+        copy("$build_dir/phpshell-min-gz.php", $dest);
+      }
+
     }
     if(!$keep){
       echo "removing build dir";
