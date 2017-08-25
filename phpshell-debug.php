@@ -13,7 +13,7 @@
         $extension = pathinfo($file,PATHINFO_EXTENSION);
         switch($extension){
             case 'php':
-                include $file;
+                include_once $file;
             break;
             case 'css':
                 @$GLOBALS['__CSS'] .= "\n" .  file_get_contents($file);

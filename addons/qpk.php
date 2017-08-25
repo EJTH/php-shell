@@ -13,7 +13,7 @@ function phpshell_qpk($args){
       $addon = "https://raw.githubusercontent.com/EJTH/php-shell/master/addons/$addon_str.php";
       if(!file_exists($addon_path)) mkdir($addon_path);
       if(file_exists($addon_path)){
-        error_level(E_ALL);
+        error_reporting(E_ALL);
         if( copy($addon,$addon_path . $args[1]) ){
           echo "Installed $addon";
         }
