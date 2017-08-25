@@ -1,6 +1,6 @@
 <?php
 $addon_path = pathinfo($GLOBALS['phpshell_path'], PATHINFO_DIRNAME) . '/addons/';
-foreach(glob("$addon_path/*.php" as $a){
+foreach(glob("$addon_path/*.php") as $a){
   include_once $a;
 }
 function phpshell_qpk($args){
