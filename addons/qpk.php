@@ -71,12 +71,12 @@ function phpshell_util($args){
         if(in_array('all', $args)) $addons = "all";
 
         echo "Building with addons: " . implode(", ",$addons);
-        file_put_contents("$build_dir/phpshell-config.php",'<?php $GLOBALS[\'PHPSHELL_CONFIG\'] = json_decode(\'' . json_encode($GLOBALS['PHPSHELL_CONFIG']) . '\',true);');
+        file_put_contents("$build_dir/phpshell-config.php",'<?php $GLOBALS[\'PHPSHELL_CONFIG\'] = json_decode(\'' . json_encode($GLOBALS['PHPSHELL_CONFIG']) . '\',true);?>');
 
         passthru("cd $build_dir/ && rm -f phpshell-min.php phpshell-min-gz.php && php phpshell-build.php && echo Succesfully build");
         passthru('pwd');
         if($dest){
-          copy("$build_dir/phpshell-min-gz.php", $dest);
+          copy("$build_dir/phpshell-min.php", $dest);
         }
         if(!$keep){
           echo "removing build dir";
