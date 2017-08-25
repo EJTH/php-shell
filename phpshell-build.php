@@ -74,19 +74,6 @@
     $contents = preg_replace("#[ \t]*\n[ \t]*#","\n",$contents);
     $contents = preg_replace("#[\r\n]+#","\n",$contents);
 
-    $replacements = array(
-        'PHPSHELL_CONFIG'    => 'PC',
-        'registerCommand'    => 'rC',
-        'phpshell_' => 'ps_',
-        'isWindows'    => 'iW',
-        'SHELL_INFO'   => 'SI',
-        'new PHPShell' => 'new PS',
-        'PHPShell::'   => 'PS::',
-        'class PHPShell' => 'class PS',
-    );
-
-    $contents = str_replace(array_keys($replacements), array_values($replacements), $contents);
-
     file_put_contents('phpshell-min.php', $contents);
 
     $s = str_replace(['\\', '$'],['\\\\','\\$'], gzcompress($contents));
