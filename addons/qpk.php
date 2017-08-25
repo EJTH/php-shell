@@ -1,11 +1,16 @@
 <?php
+$addon_path = pathinfo($GLOBALS['phpshell_path'], PATHINFO_DIRNAME) . '/addons/';
+foreach(glob("$addon_path/*.php" as $a){
+  include_once $a;
+}
 function phpshell_qpk($args){
   $args = PHPShell::strToArgv($args);
   print_r($args);
   switch($args[0]){
     case 'install':
-      $addon_path = $GLOBALS['phpshell_path'] . '/addons/';
+      $addon_path = pathinfo($GLOBALS['phpshell_path'], PATHINFO_DIRNAME) . '/addons/';
       $addon = "https://raw.githubusercontent.com/EJTH/php-shell/master/addons/$addon.php";
+      if(!file_exists($addon_path)) mkdir($addon_path);
       if(file_exists($addon_path)){
         error_level(E_ALL);
         if( copy($addon,$addon_path . $args[1]) ){
