@@ -1,9 +1,4 @@
 <?php
-$addon_path = $GLOBALS['phpshell_path'] . '/addons/';
-foreach(glob("$addon_path/*.php") as $k => $v){
-  echo $k.' '.$v;
-}
-
 function phpshell_util($args){
   $args = PHPShell::strToArgv($args);
   print_r($args);
