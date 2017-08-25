@@ -61,7 +61,7 @@
     $contents = ob_get_clean();
 
     //remove comments and whitespace
-    $contents = preg_replace('/[ ]+|\/\*.*?\*\//s'," ",$contents);
+    $contents = preg_replace('/[ ]+|\/\* .*?\*\//s'," ",$contents);
 
     $contents = preg_replace('#\n[ ]+//[^\n]+\n#',"\n",$contents);
 
@@ -93,6 +93,13 @@
     $gz = "<?php \$s = <<<XXX\n$s\nXXX;\n";
     $gz .= 'eval("?>".gzuncompress($s)); ?>';
     file_put_contents('phpshell-min-gz.php', $gz);
+
+    $addons = glob('addons/*.php');
+    foreach($addons as &$a){
+      $a = pathinfo($a, PATHINFO_FILENAME);
+    }
+
+    file_put_contents('qpk_list',implode("\n",$addons));
 
     //Save bumped revision on success
     file_put_contents('build', $revision);

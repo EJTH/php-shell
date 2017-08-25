@@ -1,13 +1,48 @@
 <?php
+$ps_min=true;
 $ps_path = __FILE__;
 define('PHPSHELL_EOF_MARK','---EOF');
 $REGISTERED_FUNCTIONS = array();
 $GLOBALS['PC'] = array(
+/*
+* A MOTD to users
+*/
 'MOTD' => "",
+/*
+* If you know the real path to the php CLI executable, then specify it here,
+* if you don't phpshell will try to guess it. The path to PHP is important
+* for interactive-stdin support,
+* but if php is in PATH env variable, then don't worry
+*/
 'PHP_PATH' => '',
+/*
+* Default mode for PHPShell to work in
+* Possible values:
+* shell_exec shell_exec will by used for executing commands
+* This works as long as shell_exe isn't disabled.
+* Downside is that interactive-stdin is not possible.
+*
+* interactive proc_open will be used together with some dark php
+* magic to give a very rough interactive support
+* through simple stdin pipes. tty programs will
+* not work as expected, if at all.
+*
+*
+*/
 'MODE' => 'interactive-stdin',
+/*
+* Prompt layout:
+* possible variables:
+* %cwd% Current working directory
+* %hostname% Hostname
+* %user% The user running phpshell
+*/
 'WIN_PROMPT' => '%cwd%> ', //Classic DOS style
 'NIX_PROMPT' => '%user%@%hostname%:%cwd% #',
+/*
+* HTTP AUTHENTICATION
+* You might want to protect PHPShell with simple http authentication
+*/
 'USE_AUTH' => true,
 'AUTH_USERNAME' => 'test123',
 'AUTH_PASSWORD' => 'test123',
@@ -50,13 +85,28 @@ exit;
 }
 }
 }
+/**
+* Use this function to register functions in PHP as commands callable from the PHPShell.
+*
+* @param type $f callable to use for this command
+* @param type $cmd command alias
+* @param type $help Description to be listed in 'help' command
+*/
 function rC($f,$cmd,$help=''){
 $GLOBALS['REGISTERED_FUNCTIONS'][$cmd] = array('function'=>$f,'help'=>$help);
 }
 class PS {
+/**
+* Initializes PHPShell client.
+*/
 public function __construct(){
 @ob_clean();
 $args=$this->getArgvAssoc();
+/*
+* Open a new process and keep it running even though
+* Client disconnects. using ampersand to spawn a new thread on nix
+* systems and by using start command on windows.
+*/
 if(isset($args['cmd'])){
 print_r($args);
 print_r($GLOBALS['argv']);
@@ -64,6 +114,9 @@ chdir(realpath($args['cwd']).DIRECTORY_SEPARATOR);
 $this->spawnProcess($args['cmd'],$args['handle']);
 exit;
 }
+/*
+* If no CLI arguments are catched, we respond to client requests.
+*/
 if(isset($_POST['cwd'])){
 chdir($_REQUEST['cwd']);
 }
@@ -125,12 +178,35 @@ $pre.append($input);
 $('body').append($('<div class="bg"></div>'));
 $input.focus();
 $input.css('min-width','100px');
+/**
+* Input buffer for stdin stuff
+* @type Array
+*/
 var procStdIn = [];
+/**
+* UUID for current running process
+* @type Boolean|Boolean|@exp;response@pro;handle
+*/
 var currentHandle = false;
+/**
+* Current suggestions
+* @type Array|Array|@exp;data@pro;suggestions
+*/
 var suggestions = [];
+/**
+* Current suggestion index
+* @type Number|Number|Number
+*/
 var currentSuggestion = 0;
+/**
+* Previous keystroke
+* @type Number|Number|@exp;e@pro;which
+*/
 var lastKey = 0;
 var echoKeyboard = true;
+/**
+*
+*/
 $input.keyup(function(e){
 if(currentHandle != false){
 var strIn = $input.val();
@@ -265,6 +341,9 @@ localStorage.setItem('hist', JSON.stringify(history));
 currentHistory = 0;
 $input.val('');
 writeln(statement);
+/*
+* Client side commands
+*/
 if(statement == "clear" || statement == "cls"){
 $output.html('');
 writeCwdLine();
@@ -355,6 +434,12 @@ exit;
 private $proc;
 private $pipes;
 private $handle;
+/**
+* Starts a command as an async proc. that will run forever.
+* This is done by calling phpshell from within a shell to create a worker thread
+* that can feed the client with output and feed the process with client input.
+* @param type $cmd
+*/
 private function startAsyncProc($cmd){
 $handle = md5($cmd.time());
 $this->handle = $handle;
@@ -385,6 +470,11 @@ $str .= " -$k $v";
 }
 return $str;
 }
+/**
+* Attempts to find the path to the PHP executable on the system.
+*
+* @return type
+*/
 private function getPhpPath(){
 $pathTests = array();
 $cachedResultFile = dirname(__FILE__).DIRECTORY_SEPARATOR.'phpshell-phpbin-path';
@@ -429,11 +519,24 @@ file_put_contents($this->getTmpFile('stdout'), "\nERROR: Could not find php exec
 PHPSHELL_EOF_MARK);
 return 'php';
 }
+/**
+* Sends stdin to the stdin tempfile
+* STDIN does not work reliably on proc_open so it is essentially unused
+* @param type $stdin
+* @param type $proc
+*/
 private function stdinToProc($stdin,$handle){
 $this->handle = $handle;
 $stdinStr = str_replace("\r", "\n", $stdin);
 file_put_contents($this->getTmpFile('stdin'), $stdinStr,FILE_APPEND);
 }
+/**
+* Gets argv with simple "windows" like syntax
+* my-cli.php -stringInput 'this is a string' -int 10 -boolean_flag -another
+* returns:
+* array('stringInput' => 'this is a string', 'int'=>10,'boolean_flag'=>true,'another'=>true)
+* @global type $argv
+*/
 public static function getArgvAssoc(){
 global $argv,$argc;
 $arguments = array();
@@ -447,9 +550,18 @@ if(!$nextIsArg) $i++;
 }
 return $arguments;
 }
+/**
+* Return the full path to the specified tempfile.
+* @param type $pipe
+* @return type
+*/
 private function getTmpFile($pipe){
 return dirname(__FILE__).DIRECTORY_SEPARATOR.$this->handle.'-'.$pipe;
 }
+/**
+* Spawns a new process in that runs indefinetely and pipe output to a tempfile.
+* @param type $cmd
+*/
 private function spawnProcess($cmd,$handle){
 $this->handle = $handle;
 file_put_contents($this->getTmpFile('stdout'), '');
@@ -493,6 +605,10 @@ sleep(1);
 @unlink($this->getTmpFile('stdout'));
 @unlink($this->getTmpFile('stdin'));
 }
+/**
+* reads the stdout tempfile and returns the result as json to the client.
+* @param type $handle
+*/
 public function readProc($handle){
 $this->handle = $handle;
 $data = "";
@@ -530,6 +646,12 @@ $argv[] = $keepQuotes ? $arg : str_replace(array('"',"'"), '', $arg);
 }
 return $argv;
 }
+/**
+* Run a command be it internal or shell executed
+* @param type $cmd
+* @param type $mode proc
+*
+*/
 private function runCommand($cmd,$mode="shell_exec"){
 $output = $this->processInternalCommand($cmd);
 if($output === null){
@@ -558,6 +680,10 @@ echo json_encode(array(
 ));
 exit;
 }
+/**
+* Handles suggestion when hitting [TAB] key in the client.
+* @param type $input
+*/
 private function tabSuggest($i){
 $suggestions = array();
 $input = self::strToArgv($i);
@@ -582,6 +708,13 @@ $suggestions[] = $i;
 echo json_encode(array('suggestions'=>$suggestions));
 exit;
 }
+/**
+* Checks if a command is an internal one, executes it if it is, returns null
+* if it isnt.
+* @global array $REGISTERED_FUNCTIONS
+* @param type $statement
+* @return type
+*/
 private function processInternalCommand($statement){
 global $REGISTERED_FUNCTIONS;
 $statement = explode(' ', $statement,2);
@@ -595,6 +728,11 @@ return ob_get_clean();
 }
 return null;
 }
+/**
+* Return information about the shell to the client.
+* Current working dir, prompt format, motd.
+* @return type
+*/
 private function getShellInfo(){
 return array(
 'cwd' => getcwd(),
@@ -611,6 +749,10 @@ return array(
 'prompt_style' => $GLOBALS['PC'][PS::iW()?'WIN_PROMPT':'NIX_PROMPT']
 );
 }
+/**
+* Return the MOTD for the shell.
+* @return string
+*/
 private function getMotd(){
 $motd = 'PHP-Shell - '.php_uname();
 if(isset($GLOBALS['PC']['MOTD']))
@@ -618,6 +760,10 @@ $motd .= "\n\n".$GLOBALS['PC']['MOTD']."\n";
 $motd .= "\nEnter 'help' to get started.";
 return $motd;
 }
+/**
+* Returns true if OS is WIN else false and *NIX is assumed.
+* @return type
+*/
 public static function iW(){
 return strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
 }
@@ -685,6 +831,72 @@ if(PS::iW())
 rC('ps_ls','ls','List directory content');
 else
 rC('ps_ls','list','List directory content');
+function ps_build_util($args){
+$args = PS::strToArgv($args);
+$replace = in_array('--replace', $args);
+$keep = in_array('--keep', $args);
+$addons = array();
+$without = in_array('without', $args);
+$with = in_array('with', $args);
+$dest = false;
+foreach($args as $a){
+if(preg_match("#^--dest=(.+)#", $a, $dest)){
+$dest = $dest[1];
+}
+}
+if($replace && $GLOBALS['ps_min']){
+$dest = $GLOBALS['ps_path'];
+}
+if(count($args) < 2 || !($keep || $dest)){
+echo "\nYou must at least specify all addons or include / exclude and either --keep, --replace or --dest. --replace and --dest will only keep gz comp if it can";
+echo "\nExamples: ";
+echo "\nqpk rebuild with cd ls qedit qget qput qpk --replace #Replace current phpshell with light custom version";
+echo "\nqpk rebuild without qpk screenprint txttoart --keep #Keep build folder and build a semi bloated version without qpk, screenprint and txttoart";
+echo "\nqpk rebuild all --dest=/move/build/here #build with all addons and move build files to dest";
+exit;
+}
+$build_dir = "build_phpshell/php-shell-master";
+$addon_dir = "$build_dir/addons";
+copy('https://github.com/EJTH/php-shell/archive/master.zip','ps_master.zip');
+_unzip('ps_master.zip', 'build_phpshell/');
+if(file_exists('build_phpshell/')){
+echo "\nBuilding...\n";
+foreach(glob("$addon_dir/*.php") as $a){
+$a = pathinfo($a, PATHINFO_FILENAME);
+$in_list = in_array($a, $args);
+if(($without && $in_list) || ($with && !$in_list)){
+unlink("$addon_dir/$a.php");
+} else {
+$addons[] = $a;
+}
+}
+if(in_array('all', $args)) $addons = "all";
+echo "Building with addons: " . implode(", ",$addons);
+file_put_contents("$build_dir/phpshell-config.php",'<?php $GLOBALS[\'PC\'] = json_decode(\'' . json_encode($GLOBALS['PC']) . '\',true);?>');
+passthru("cd $build_dir/ && rm -f phpshell-min.php phpshell-min-gz.php && php phpshell-build.php && echo Succesfully build");
+passthru('pwd');
+if($dest){
+copy("$build_dir/phpshell-min.php", $dest);
+}
+if(!$keep){
+echo "removing build dir";
+passthru("rm -rf build_phpshell");
+}
+unlink('ps_master.zip');
+}
+}
+function _unzip($s,$d){
+$zip = new ZipArchive;
+$res = $zip->open($s);
+if ($res === TRUE) {
+$zip->extractTo($d);
+$zip->close();
+return true;
+}
+}
+rC('ps_build_util','qbuild','Rebuild with addons');
+?>
+<?php   
 function ps_qedit($args){
 echo '<div class="qedit" data-file="'.htmlentities($args).'"><textarea>'.@str_replace(['<','>'],['&lt;','&gt;'],file_get_contents(realpath($args))).'</textarea><button class="save">Save</button></div>';
 }
@@ -692,6 +904,20 @@ if(isset($_POST['qedit_content']) && isset($_POST['qedit_fn'])){
 echo file_put_contents($_POST['qedit_fn'],$_POST['qedit_content']);
 }
 rC('ps_qedit','qedit','Edit various data files. supported: txt');
+?>
+<?php   
+$addon_path = $GLOBALS['ps_path'] . '/addons/';
+$addon = "https://raw.githubusercontent.com/EJTH/php-shell/master/addons/$addon.php";
+if(file_exists($addon_path)){
+error_level(E_ALL);
+if( copy($addon,$addon_path . $args[1]) ){
+echo "Installed $addon";
+}
+echo "Failed to install $addon";
+} else {
+echo "No addon folder found. Please create writeable directory at $addon_path";
+}
+rC('ps_qpk','qpk','Manage addons (list | install | remove)');
 ?>
 <?php   
 function ps_qput($args){
