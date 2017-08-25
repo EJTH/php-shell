@@ -9,7 +9,7 @@
     $revision++;
 
     echo "<?php /* PHPSHELL - (Build: $revision $BUILD_DATE - $URL */ ";
-    echo "\n\$phpshell_path = __FILE__;\n";
+    echo "\n\n$phpshell_min=true;\n\$phpshell_path = __FILE__;\n";
 
     function recursiveInclude($f){
         $ret = '';
