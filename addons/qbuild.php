@@ -56,11 +56,13 @@ function phpshell_build_util($args){
     file_put_contents("$build_dir/phpshell-config.php",'<?php $GLOBALS[\'PHPSHELL_CONFIG\'] = json_decode(\'' . json_encode($GLOBALS['PHPSHELL_CONFIG']) . '\',true);?>');
 
     passthru("cd $build_dir/ && rm -f phpshell-min.php phpshell-min-gz.php && php phpshell-build.php && echo Succesfully build");
-    passthru('pwd');
+
     if($dest){
       if(!$gz){
+        unlink("$build_dir/phpshell-min.php");
         copy("$build_dir/phpshell-min.php", $dest);
       } else {
+        unlink("$build_dir/phpshell-min-gz.php");
         copy("$build_dir/phpshell-min-gz.php", $dest);
       }
 
