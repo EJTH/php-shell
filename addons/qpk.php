@@ -8,8 +8,9 @@ function phpshell_qpk($args){
   print_r($args);
   switch($args[0]){
     case 'install':
+      $addon_str = $args[1];
       $addon_path = pathinfo($GLOBALS['phpshell_path'], PATHINFO_DIRNAME) . '/addons/';
-      $addon = "https://raw.githubusercontent.com/EJTH/php-shell/master/addons/$addon.php";
+      $addon = "https://raw.githubusercontent.com/EJTH/php-shell/master/addons/$addon_str.php";
       if(!file_exists($addon_path)) mkdir($addon_path);
       if(file_exists($addon_path)){
         error_level(E_ALL);
