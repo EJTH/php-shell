@@ -9,7 +9,7 @@
     $revision++;
 
     echo "<?php /* PHPSHELL - (Build: $revision $BUILD_DATE - $URL */ ";
-    echo "\n\$phpshell_min=true;\n\$phpshell_path = __FILE__;\n";
+    echo "\n\$GLOBALS[\"phpshell_min\"]=true;\n\$GLOBALS[\"phpshell_path\"] = __FILE__;\n";
 
     function recursiveInclude($f){
         $ret = '';
@@ -61,13 +61,31 @@
     $contents = ob_get_clean();
 
     //remove comments and whitespace
-    $contents = preg_replace('/[ ]+|\/\* .*?\*\//s'," ",$contents);
+    $contents = preg_replace('/[ ]+|\/\*[ *].*?\*\//s'," ",$contents);
 
-    $contents = preg_replace('#\n[ ]+//[^\n]+\n#',"\n",$contents);
+    $contents = preg_replace('#/[*][ \n\r].*?[*]/#s',"\n",$contents);
+
+    $contents = preg_replace("#// [^\n]+\n#","\n",$contents);
 
     //Remove php close-opens casued by recursiveInclude()
     $contents = preg_replace('/\?><\?php/','',$contents);
-
+    $exclude = ['GLOBALS','_POST','_GET','_COOKIE','_SESSION','_REQUEST','argv','argc','_SERVER','this','__construct'];
+    $contents = preg_replace_callback('#(\$|->|private function |public function )([a-z0-9_A-Z]+)#', function($matches) use ($contents, $exclude){
+      static $replacements = [];
+      static $i=0;
+      if(in_array($matches[2], $exclude)) return $matches[0];
+      if(empty($replacements[$matches[2]])){
+        $replacements[$matches[2]] = 'v'.$i;
+        $i++;
+      }
+      if(strlen($matches[2]) < 4){
+        return $matches[0];
+      }
+      if($matches[1] == '->' && stripos($contents,'function '.$matches[2]) === false){
+        return $matches[0];
+      }
+      return $matches[1].$replacements[$matches[2]];
+    }, $contents);
 
 
     //Remove more whitespace

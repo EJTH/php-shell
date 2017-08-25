@@ -1,48 +1,14 @@
 <?php
-$ps_min=true;
-$ps_path = __FILE__;
+$GLOBALS["phpshell_min"]=true;
+$GLOBALS["phpshell_path"] = __FILE__;
 define('PHPSHELL_EOF_MARK','---EOF');
-$REGISTERED_FUNCTIONS = array();
-$GLOBALS['PC'] = array(
-/*
-* A MOTD to users
-*/
+$GLOBALS['REGISTERED_FUNCTIONS'] = array();
+$GLOBALS['PHPSHELL_CONFIG'] = array(
 'MOTD' => "",
-/*
-* If you know the real path to the php CLI executable, then specify it here,
-* if you don't phpshell will try to guess it. The path to PHP is important
-* for interactive-stdin support,
-* but if php is in PATH env variable, then don't worry
-*/
 'PHP_PATH' => '',
-/*
-* Default mode for PHPShell to work in
-* Possible values:
-* shell_exec shell_exec will by used for executing commands
-* This works as long as shell_exe isn't disabled.
-* Downside is that interactive-stdin is not possible.
-*
-* interactive proc_open will be used together with some dark php
-* magic to give a very rough interactive support
-* through simple stdin pipes. tty programs will
-* not work as expected, if at all.
-*
-*
-*/
 'MODE' => 'interactive-stdin',
-/*
-* Prompt layout:
-* possible variables:
-* %cwd% Current working directory
-* %hostname% Hostname
-* %user% The user running phpshell
-*/
-'WIN_PROMPT' => '%cwd%> ', //Classic DOS style
+'WIN_PROMPT' => '%cwd%> ',
 'NIX_PROMPT' => '%user%@%hostname%:%cwd% #',
-/*
-* HTTP AUTHENTICATION
-* You might want to protect PHPShell with simple http authentication
-*/
 'USE_AUTH' => true,
 'AUTH_USERNAME' => 'test123',
 'AUTH_PASSWORD' => 'test123',
@@ -53,7 +19,7 @@ $GLOBALS['PC'] = array(
 );
 ?>
 <?php
-$args=PS::getArgvAssoc();
+$v0=PHPShell::getArgvAssoc();
 function alt_auth(){
 ?>
 <form method="POST">
@@ -62,10 +28,10 @@ function alt_auth(){
 <?php
 exit;
 }
-if(@$GLOBALS['PC']['USE_AUTH'] && !isset($args['cmd'])){
-if(@$_POST['psauth'] == $GLOBALS['PC']['AUTH_PASSWORD']
-|| @$_COOKIE['psauth'] == md5($GLOBALS['PC']['AUTH_PASSWORD'])){
-setcookie('psauth', md5($GLOBALS['PC']['AUTH_PASSWORD']),time()+3600);
+if(@$GLOBALS['PHPSHELL_CONFIG']['USE_AUTH'] && !isset($v0['cmd'])){
+if(@$_POST['psauth'] == $GLOBALS['PHPSHELL_CONFIG']['AUTH_PASSWORD']
+|| @$_COOKIE['psauth'] == md5($GLOBALS['PHPSHELL_CONFIG']['AUTH_PASSWORD'])){
+setcookie('psauth', md5($GLOBALS['PHPSHELL_CONFIG']['AUTH_PASSWORD']),time()+3600);
 } else {
 if (!isset($_SERVER['PHP_AUTH_USER'])) {
 header('WWW-Authenticate: Basic realm="My Realm"');
@@ -74,8 +40,8 @@ echo 'Authentication required.';
 alt_auth();
 exit;
 }
-if($_SERVER['PHP_AUTH_USER'] != @$GLOBALS['PC']['AUTH_USERNAME']
-|| $_SERVER['PHP_AUTH_PW'] != @$GLOBALS['PC']['AUTH_PASSWORD'])
+if($_SERVER['PHP_AUTH_USER'] != @$GLOBALS['PHPSHELL_CONFIG']['AUTH_USERNAME']
+|| $_SERVER['PHP_AUTH_PW'] != @$GLOBALS['PHPSHELL_CONFIG']['AUTH_PASSWORD'])
 {
 header('WWW-Authenticate: Basic realm="My Realm"');
 header('HTTP/1.0 401 Unauthorized');
@@ -85,65 +51,48 @@ exit;
 }
 }
 }
-/**
-* Use this function to register functions in PHP as commands callable from the PHPShell.
-*
-* @param type $f callable to use for this command
-* @param type $cmd command alias
-* @param type $help Description to be listed in 'help' command
-*/
-function rC($f,$cmd,$help=''){
-$GLOBALS['REGISTERED_FUNCTIONS'][$cmd] = array('function'=>$f,'help'=>$help);
+function registerCommand($f,$cmd,$v3=''){
+$GLOBALS['REGISTERED_FUNCTIONS'][$cmd] = array('function'=>$f,'help'=>$v3);
 }
-class PS {
-/**
-* Initializes PHPShell client.
-*/
+class PHPShell {
 public function __construct(){
 @ob_clean();
-$args=$this->getArgvAssoc();
-/*
-* Open a new process and keep it running even though
-* Client disconnects. using ampersand to spawn a new thread on nix
-* systems and by using start command on windows.
-*/
-if(isset($args['cmd'])){
-print_r($args);
+$v0=$this::getArgvAssoc();
+if(isset($v0['cmd'])){
+print_r($v0);
 print_r($GLOBALS['argv']);
-chdir(realpath($args['cwd']).DIRECTORY_SEPARATOR);
-$this->spawnProcess($args['cmd'],$args['handle']);
+//Appending DIRECTORY_SEPERATOR because a bug in argv.
+chdir(realpath($v0['cwd']).DIRECTORY_SEPARATOR);
+$this->v4($v0['cmd'],$v0['handle']);
 exit;
 }
-/*
-* If no CLI arguments are catched, we respond to client requests.
-*/
 if(isset($_POST['cwd'])){
 chdir($_REQUEST['cwd']);
 }
 if(isset($_POST['action'])){
 switch($_POST['action']){
 case 'exec':
-$this->runCommand($_POST['cmd'],@$_POST['mode']);
+$this->v5($_POST['cmd'],@$_POST['mode']);
 break;
 case 'suggest':
-$this->tabSuggest($_POST['input']);
+$this->v6($_POST['input']);
 break;
 case 'proc':
-$this->readProc($_POST['handle']);
+$this->v7($_POST['handle']);
 break;
 case 'stdin':
-$this->stdinToProc($_POST['stdin'],$_POST['handle']);
+$this->v8($_POST['stdin'],$_POST['handle']);
 break;
 default:
 echo json_encode(array('error' => 'Unknown action.'));
 break;
 }
 } else {
-$__CSS = $GLOBALS['__CSS'];
-$__JS = $GLOBALS['__JS'];
-$__PC = $GLOBALS['PC'];
-unset($__PC['AUTH_USERNAME']);
-unset($__PC['AUTH_PASSWORD']);
+$v9 = $GLOBALS['__CSS'];
+$v10 = $GLOBALS['__JS'];
+$v11 = $GLOBALS['PHPSHELL_CONFIG'];
+unset($v11['AUTH_USERNAME']);
+unset($v11['AUTH_PASSWORD']);
 ?><!DOCTYPE html>
 <html>
 <head>
@@ -151,7 +100,7 @@ unset($__PC['AUTH_PASSWORD']);
 <title>PHPShell</title>
 <script type="text/javascript" src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
 <script type="text/javascript">
-var SI = <?php echo json_encode($this->getShellInfo());?>;
+var SHELL_INFO = <?php echo json_encode($this->v12());?>;
 </script>
 <script type="text/javascript">
 <?php   ?>var PHPShell = {};
@@ -167,52 +116,29 @@ var $pre = $('<pre>');
 $('body > *').each(function(){
 $(this).remove();
 });
-var mode = localStorage.getItem('ps_xmode') || SI.mode || 'exec';
+var mode = localStorage.getItem('ps_xmode') || SHELL_INFO.mode || 'exec';
 var supportedModes = ['interactive','shell_exec','exec'];
 var onCommandListeners = [];
 $('body').append($pre);
-var $output = $('<span class="output"></span>');
-$pre.append($output);
-var $input = $('<input class="input">');
-$pre.append($input);
+var $v14 = $('<span class="output"></span>');
+$pre.append($v14);
+var $v15 = $('<input class="input">');
+$pre.append($v15);
 $('body').append($('<div class="bg"></div>'));
-$input.focus();
-$input.css('min-width','100px');
-/**
-* Input buffer for stdin stuff
-* @type Array
-*/
+$v15.focus();
+$v15.css('min-width','100px');
 var procStdIn = [];
-/**
-* UUID for current running process
-* @type Boolean|Boolean|@exp;response@pro;handle
-*/
 var currentHandle = false;
-/**
-* Current suggestions
-* @type Array|Array|@exp;data@pro;suggestions
-*/
 var suggestions = [];
-/**
-* Current suggestion index
-* @type Number|Number|Number
-*/
 var currentSuggestion = 0;
-/**
-* Previous keystroke
-* @type Number|Number|@exp;e@pro;which
-*/
 var lastKey = 0;
 var echoKeyboard = true;
-/**
-*
-*/
-$input.keyup(function(e){
+$v15.keyup(function(e){
 if(currentHandle != false){
-var strIn = $input.val();
+var strIn = $v15.val();
 if(strIn.length > 0){
 procStdIn.push(strIn);
-$input.val('');
+$v15.val('');
 }
 if(e.which == 13||e.which==10){
 procStdIn.push(String.fromCharCode(10));
@@ -220,7 +146,7 @@ procStdIn.push(String.fromCharCode(10));
 sendStdIn();
 }
 });
-$input.keydown(function(e){
+$v15.keydown(function(e){
 if(currentHandle != false){
 return;
 }
@@ -234,21 +160,21 @@ dataType: 'json',
 type:'post',
 data:{
 action:'suggest',
-cwd:SI.cwd,
-input:$input.val()
+cwd:SHELL_INFO.cwd,
+input:$v15.val()
 }
 }).done(function(data){
 suggestions = data.suggestions;
-$input.val(suggestions[currentSuggestion]);
-$input.css('width',12+($input.val().length*12));
+$v15.val(suggestions[currentSuggestion]);
+$v15.css('width',12+($v15.val().length*12));
 });
 currentSuggestion = 0;
 } else if(suggestions.length > 0) {
 currentSuggestion++;
 if(currentSuggestion >= suggestions.length) currentSuggestion = 0;
-else $input.val(suggestions[currentSuggestion]);
-$input.val(suggestions[currentSuggestion]);
-$input.css('width',12+($input.val().length*12));
+else $v15.val(suggestions[currentSuggestion]);
+$v15.val(suggestions[currentSuggestion]);
+$v15.css('width',12+($v15.val().length*12));
 }
 lastKey = 9;
 e.preventDefault();
@@ -258,12 +184,12 @@ case 38:
 currentHistory++;
 if(currentHistory > history.length){
 currentHistory = 0;
-$input.val('');
+$v15.val('');
 } else {
-$input.val('');
+$v15.val('');
 setTimeout(function(){
-$input.val(history[history.length-currentHistory]);
-$input.css('width',12+($input.val().length*12));
+$v15.val(history[history.length-currentHistory]);
+$v15.css('width',12+($v15.val().length*12));
 },50);
 }
 break;
@@ -271,9 +197,9 @@ case 40:
 currentHistory--;
 if(history < 0){
 history = 0;
-$input.val('');
+$v15.val('');
 } else
-$input.val(history[history.length-currentHistory]);
+$v15.val(history[history.length-currentHistory]);
 break;
 case 13:
 runStatement();
@@ -282,24 +208,24 @@ default: console.log(e.which);
 break;
 }
 lastKey = e.which;
-$input.css('width',12+($input.val().length*12));
+$v15.css('width',12+($v15.val().length*12));
 });
 function animateCursor(){
 $("html, body").stop();
 $("html, body").animate({ scrollTop: $(document).height() }, 2500);
 }
 function write(s){
-$output.append(s);
+$v14.append(s);
 }
 function writeln(s){
-$output.append(s+'\n');
+$v14.append(s+'\n');
 }
 function writeCwdLine(){
-var cwdStr = SI.prompt_style;
+var cwdStr = SHELL_INFO.prompt_style;
 var cwdVars = {
-cwd : SI.cwd,
-hostname : SI.hostname,
-user : SI.user
+cwd : SHELL_INFO.cwd,
+hostname : SHELL_INFO.hostname,
+user : SHELL_INFO.user
 };
 $.each(cwdVars,function(i){
 cwdStr = cwdStr.replace('%'+i+'%',this);
@@ -307,7 +233,7 @@ cwdStr = cwdStr.replace('%'+i+'%',this);
 write('\n<span class="cwd">'+cwdStr+'</span>');
 }
 function readProc(){
-$.post(window.location.href,{action:'proc',handle:currentHandle,cwd:SI.cwd}, function(response){
+$.post(window.location.href,{action:'proc',handle:currentHandle,cwd:SHELL_INFO.cwd}, function(response){
 if(response.out !== "")
 write(response.out);
 if(!response.eof){
@@ -333,19 +259,16 @@ procStdIn = [];
 }
 }
 function runStatement(){
-var statement = $input.val();
+var statement = $v15.val();
 if(history[history.length-1] !== statement){
 history.push(statement);
 localStorage.setItem('hist', JSON.stringify(history));
 }
 currentHistory = 0;
-$input.val('');
+$v15.val('');
 writeln(statement);
-/*
-* Client side commands
-*/
 if(statement == "clear" || statement == "cls"){
-$output.html('');
+$v14.html('');
 writeCwdLine();
 return;
 }
@@ -386,14 +309,14 @@ writeln('Keyboard echo disabled.');
 writeCwdLine();
 return;
 }
-$.post(window.location.href,{action:'exec',cwd:SI.cwd,cmd:statement,mode:mode},function(response){
+$.post(window.location.href,{action:'exec',cwd:SHELL_INFO.cwd,cmd:statement,mode:mode},function(response){
 if(mode == "interactive" && response.handle){
 currentHandle = response.handle;
 procStdIn = [];
 readProc();
 } else {
 write(response.html ? response.output : document.createTextNode(response.output));
-SI.cwd = response.cwd;
+SHELL_INFO.cwd = response.cwd;
 writeCwdLine();
 animateCursor();
 }
@@ -405,7 +328,7 @@ onCommandListeners.push(callback);
 phpshell.writeln = writeln;
 phpshell.write = write;
 phpshell.writeCwdLine = writeCwdLine;
-writeln(SI.motd);
+writeln(SHELL_INFO.motd);
 writeCwdLine();
 });
 })(PHPShell);
@@ -431,63 +354,52 @@ margin:0px;
 }
 exit;
 }
-private $proc;
-private $pipes;
-private $handle;
-/**
-* Starts a command as an async proc. that will run forever.
-* This is done by calling phpshell from within a shell to create a worker thread
-* that can feed the client with output and feed the process with client input.
-* @param type $cmd
-*/
-private function startAsyncProc($cmd){
-$handle = md5($cmd.time());
-$this->handle = $handle;
-file_put_contents($this->getTmpFile('stdout'), '');
-$args = array(
-'handle' => $handle,
+private $v16;
+private $v17;
+private $v18;
+private function v19($cmd){
+$v18 = md5($cmd.time());
+$this->handle = $v18;
+file_put_contents($this->v20('stdout'), '');
+$v0 = array(
+'handle' => $v18,
 'cmd' => $cmd,
 'cwd' => getcwd()
 );
-$c = //PHP executable path
-$this->getPhpPath()." "
-. $GLOBALS['ps_path']
-. self::arrayToArgs($args);
-echo json_encode(array('handle'=>$handle,'cwd'=>getcwd()));
-chdir(dirname($GLOBALS['ps_path']));
-if(PS::iW()){
+$c =
+$this->v22()." "
+. $GLOBALS['phpshell_path']
+. self::arrayToArgs($v0);
+echo json_encode(array('handle'=>$v18,'cwd'=>getcwd()));
+chdir(dirname($GLOBALS['phpshell_path']));
+if(PHPShell::isWindows()){
 pclose(popen("start /MIN $c", "r"));
 } else {
 shell_exec("nohup $c > /dev/null 2>/dev/null &");
 }
-return $handle;
+return $v18;
 }
-private static function arrayToArgs($arrArgs){
+private static function arrayToArgs($v23){
 $str = '';
-foreach($arrArgs as $k => $v){
+foreach($v23 as $k => $v){
 $v = escapeshellarg($v);
 $str .= " -$k $v";
 }
 return $str;
 }
-/**
-* Attempts to find the path to the PHP executable on the system.
-*
-* @return type
-*/
-private function getPhpPath(){
-$pathTests = array();
-$cachedResultFile = dirname(__FILE__).DIRECTORY_SEPARATOR.'phpshell-phpbin-path';
-if(isset($GLOBALS['PC']['PHP_PATH'])
-&& file_exists($GLOBALS['PC']['PHP_PATH'])){
-return $GLOBALS['PC']['PHP_PATH'];
+private function v22(){
+$v27 = array();
+$v28 = dirname(__FILE__).DIRECTORY_SEPARATOR.'phpshell-phpbin-path';
+if(isset($GLOBALS['PHPSHELL_CONFIG']['PHP_PATH'])
+&& file_exists($GLOBALS['PHPSHELL_CONFIG']['PHP_PATH'])){
+return $GLOBALS['PHPSHELL_CONFIG']['PHP_PATH'];
 }
-$cachedPhpPath = @file_get_contents($cachedResultFile);
-if($cachedPhpPath){
-return $cachedPhpPath;
+$v29 = @file_get_contents($v28);
+if($v29){
+return $v29;
 } else {
-if(PS::iW()){
-$pathTests = array(
+if(PHPShell::isWindows()){
+$v27 = array(
 'php',
 'c:\php\php.exe',
 'c:\php5\php.exe',
@@ -496,7 +408,7 @@ $pathTests = array(
 'c:\program files\php\php.exe'
 );
 } else {
-$pathTests = array(
+$v27 = array(
 'php',
 'php-cli',
 '/bin/php',
@@ -506,348 +418,291 @@ $pathTests = array(
 '/Applications/MAMP/php/php',
 );
 }
-foreach($pathTests as $p){
+foreach($v27 as $p){
 $r = shell_exec($p.' -v');
 if($r){
-file_put_contents($cachedResultFile, $p);
+file_put_contents($v28, $p);
 return $p;
 }
 }
 }
-file_put_contents($this->getTmpFile('stdout'), "\nERROR: Could not find php executable.".
+file_put_contents($this->v20('stdout'), "\nERROR: Could not find php executable.".
 "\nIf you now where it is you can specify it in phpshell-config.php or with the xphppath command\n".
 PHPSHELL_EOF_MARK);
 return 'php';
 }
-/**
-* Sends stdin to the stdin tempfile
-* STDIN does not work reliably on proc_open so it is essentially unused
-* @param type $stdin
-* @param type $proc
-*/
-private function stdinToProc($stdin,$handle){
-$this->handle = $handle;
-$stdinStr = str_replace("\r", "\n", $stdin);
-file_put_contents($this->getTmpFile('stdin'), $stdinStr,FILE_APPEND);
+private function v8($v32,$v18){
+$this->handle = $v18;
+$v33 = str_replace("\r", "\n", $v32);
+file_put_contents($this->v20('stdin'), $v33,FILE_APPEND);
 }
-/**
-* Gets argv with simple "windows" like syntax
-* my-cli.php -stringInput 'this is a string' -int 10 -boolean_flag -another
-* returns:
-* array('stringInput' => 'this is a string', 'int'=>10,'boolean_flag'=>true,'another'=>true)
-* @global type $argv
-*/
 public static function getArgvAssoc(){
 global $argv,$argc;
-$arguments = array();
+$v34 = array();
 for($i=0; $i < $argc; $i++){
-$nextIsArg = strpos($argv[$i+1],'-') === 0;
+$v36 = strpos($argv[$i+1],'-') === 0;
 if(strpos($argv[$i],'-') === 0){
-$arguments[trim($argv[$i],'-')] = (isset($argv[$i+1]) && !$nextIsArg)
+$v34[trim($argv[$i],'-')] = (isset($argv[$i+1]) && !$v36)
 ? $argv[$i+1] : true;
-if(!$nextIsArg) $i++;
+if(!$v36) $i++;
 }
 }
-return $arguments;
+return $v34;
 }
-/**
-* Return the full path to the specified tempfile.
-* @param type $pipe
-* @return type
-*/
-private function getTmpFile($pipe){
-return dirname(__FILE__).DIRECTORY_SEPARATOR.$this->handle.'-'.$pipe;
+private function v20($v37){
+return dirname(__FILE__).DIRECTORY_SEPARATOR.$this->handle.'-'.$v37;
 }
-/**
-* Spawns a new process in that runs indefinetely and pipe output to a tempfile.
-* @param type $cmd
-*/
-private function spawnProcess($cmd,$handle){
-$this->handle = $handle;
-file_put_contents($this->getTmpFile('stdout'), '');
-file_put_contents($this->getTmpFile('stdin'),'');
-$descriptors = array(
+private function v4($cmd,$v18){
+$this->handle = $v18;
+file_put_contents($this->v20('stdout'), '');
+file_put_contents($this->v20('stdin'),'');
+$v38 = array(
 0 => array("pipe", "r"),
-1 => array("file", $this->getTmpFile('stdout'),"a"), // stdout is a pipe that the child will write to
-2 => array("file", $this->getTmpFile('stdout'),"a"), // stderr is a file to write to
+1 => array("file", $this->v20('stdout'),"a"),
+2 => array("file", $this->v20('stdout'),"a"),
 );
-foreach($GLOBALS['PC'][self::iW()?'WIN':'NIX']['ENV'] as $k => $env){
+foreach($GLOBALS['PHPSHELL_CONFIG'][self::isWindows()?'WIN':'NIX']['ENV'] as $k => $env){
 putenv("$k=$env");
 }
-$this->proc = proc_open($cmd, $descriptors, $this->pipes, getcwd());
-//usleep(250000);
-$pinfo = proc_get_status($this->proc);
-$terminate = false;
-while($pinfo['running']){
+$this->v16 = proc_open($cmd, $v38, $this->pipes, getcwd());
+$v40 = proc_get_status($this->v16);
+$v41 = false;
+while($v40['running']){
 echo '.';
-//first clear statcache if long enough time has passed since the last stat
-if(time() - filemtime($this->getTmpFile('stdin')) > 60){
-clearstatcache(true, $this->getTmpFile('stdin'));
+if(time() - filemtime($this->v20('stdin')) > 60){
+clearstatcache(true, $this->v20('stdin'));
 }
-if(time() - filemtime($this->getTmpFile('stdin')) > 60){
-$terminate = true;
+if(time() - filemtime($this->v20('stdin')) > 60){
+$v41 = true;
 break;
 }
-$stdin = @file_get_contents($this->getTmpFile('stdin'));
-if($stdin !== '' && $stdin !== false){
-file_put_contents($this->getTmpFile('stdin'),'');
-fwrite($this->pipes[0],$stdin);
+$v32 = @file_get_contents($this->v20('stdin'));
+if($v32 !== '' && $v32 !== false){
+file_put_contents($this->v20('stdin'),'');
+fwrite($this->pipes[0],$v32);
 } else {
 usleep(250000);
 }
-$pinfo = proc_get_status($this->proc);
+$v40 = proc_get_status($this->v16);
 }
-proc_close($this->proc);
-if(!$terminate){
-file_put_contents($this->getTmpFile('stdout'),PHPSHELL_EOF_MARK,FILE_APPEND);
+proc_close($this->v16);
+if(!$v41){
+file_put_contents($this->v20('stdout'),PHPSHELL_EOF_MARK,FILE_APPEND);
 sleep(1);
 }
-@unlink($this->getTmpFile('stdout'));
-@unlink($this->getTmpFile('stdin'));
+@unlink($this->v20('stdout'));
+@unlink($this->v20('stdin'));
 }
-/**
-* reads the stdout tempfile and returns the result as json to the client.
-* @param type $handle
-*/
-public function readProc($handle){
-$this->handle = $handle;
-$data = "";
+public function v7($v18){
+$this->handle = $v18;
+$v42 = "";
 $eof = false;
-$touchCounter = 0;
-while($data === ""){
-$data = @file_get_contents($this->getTmpFile('stdout'));
-if($data)
-file_put_contents($this->getTmpFile('stdout'), '');
+$v44 = 0;
+while($v42 === ""){
+$v42 = @file_get_contents($this->v20('stdout'));
+if($v42)
+file_put_contents($this->v20('stdout'), '');
 usleep (500000);
-//to the process running that the client is still alive.
-if($touchCounter == 0){
-$touchCounter = 30;
-touch($this->getTmpFile('stdin'));
+if($v44 == 0){
+$v44 = 30;
+touch($this->v20('stdin'));
 }
-$touchCounter--;
+$v44--;
 }
-if(strpos($data, PHPSHELL_EOF_MARK) !== false){
-$data = str_replace(PHPSHELL_EOF_MARK,'',$data);
-@unlink($this->getTmpFile('stdout'));
-@unlink($this->getTmpFile('stdin'));
+if(strpos($v42, PHPSHELL_EOF_MARK) !== false){
+$v42 = str_replace(PHPSHELL_EOF_MARK,'',$v42);
+@unlink($this->v20('stdout'));
+@unlink($this->v20('stdin'));
 $eof=true;
 }
-$detectedEncoding = mb_detect_encoding($data,mb_list_encodings(),true);
-if($detectedEncoding != 'UTF-8'){
-$data = iconv($detectedEncoding, 'UTF-8//TRANSLIT//IGNORE', $data);
+$v45 = mb_detect_encoding($v42,mb_list_encodings(),true);
+if($v45 != 'UTF-8'){
+$v42 = iconv($v45, 'UTF-8//TRANSLIT//IGNORE', $v42);
 }
-echo json_encode(array('out' => htmlentities($data,null,'UTF-8'),'eof'=>$eof));
+echo json_encode(array('out' => htmlentities($v42,null,'UTF-8'),'eof'=>$eof));
 }
-public static function strToArgv($str, $keepQuotes=false){
-preg_match_all("#\"[^\"]+\"|'[^']+'|[^ ]++#", $str, $args);
+public static function strToArgv($str, $v46=false){
+preg_match_all("#\"[^\"]+\"|'[^']+'|[^ ]++#", $str, $v0);
 $argv = array();
-foreach($args[0] as $arg){
-$argv[] = $keepQuotes ? $arg : str_replace(array('"',"'"), '', $arg);
+foreach($v0[0] as $arg){
+$argv[] = $v46 ? $arg : str_replace(array('"',"'"), '', $arg);
 }
 return $argv;
 }
-/**
-* Run a command be it internal or shell executed
-* @param type $cmd
-* @param type $mode proc
-*
-*/
-private function runCommand($cmd,$mode="shell_exec"){
-$output = $this->processInternalCommand($cmd);
-if($output === null){
-if($mode=="shell_exec" || !$mode){
-$output = shell_exec($_REQUEST['cmd'].' 2>&1');
-} elseif($mode=="exec") {
-$return = -1;
-$output = "";
-exec($_REQUEST['cmd'].' 2>&1', $output, $return);
-$output = implode($output,"\n");
-} elseif($mode == "interactive") {
-$this->startAsyncProc($cmd);
+private function v5($cmd,$v48="shell_exec"){
+$v14 = $this->v49($cmd);
+$v50 = true;
+if($v14 === null){
+$v50 = false;
+if($v48=="shell_exec" || !$v48){
+$v14 = shell_exec($_REQUEST['cmd'].' 2>&1');
+} elseif($v48=="exec") {
+$v51 = -1;
+$v14 = "";
+exec($_REQUEST['cmd'].' 2>&1', $v14, $v51);
+$v14 = implode($v14,"\n");
+} elseif($v48 == "interactive") {
+$this->v19($cmd);
 exit;
 }
-} else {
-$html = true;
 }
-$detectedEncoding = mb_detect_encoding($output, mb_list_encodings(),true);
-if($detectedEncoding != 'UTF-8'){
-$output = iconv($detectedEncoding, 'UTF-8//TRANSLIT//IGNORE', $output);
+$v45 = mb_detect_encoding($v14, mb_list_encodings(),true);
+if($v45 != 'UTF-8'){
+$v14 = iconv($v45, 'UTF-8//TRANSLIT//IGNORE', $v14);
 }
 echo json_encode(array(
-'output' => $output,
-'html' => $html,
+'output' => $v14,
+'html' => $v50,
 'cwd' => getcwd()
 ));
 exit;
 }
-/**
-* Handles suggestion when hitting [TAB] key in the client.
-* @param type $input
-*/
-private function tabSuggest($i){
-$suggestions = array();
-$input = self::strToArgv($i);
+private function v6($i){
+$v52 = array();
+$v15 = self::strToArgv($i);
 $cmd = '';
-if(count($input) > 1){
-$search = $input[count($input)-1];
-unset($input[count($input)-1]);
-$cmd = implode(' ',$input).' ';
+if(count($v15) > 1){
+$v53 = $v15[count($v15)-1];
+unset($v15[count($v15)-1]);
+$cmd = implode(' ',$v15).' ';
 } else {
-$search = $input[0];
+$v53 = $v15[0];
 if(preg_match("#[ ]$#", $i)){
-$search = '';
-$cmd = $input[0].' ';
+$v53 = '';
+$cmd = $v15[0].' ';
 }
 }
-foreach(glob($search.'*') as $f){
+foreach(glob($v53.'*') as $f){
+//append directory separator on dirs
 if(is_dir($f)) $f .= DIRECTORY_SEPARATOR;
 if(strpos($f,' ') !== false) $f = '"'.$f.'"';
-$suggestions[] = $cmd.$f;
+$v52[] = $cmd.$f;
 }
-$suggestions[] = $i;
-echo json_encode(array('suggestions'=>$suggestions));
+$v52[] = $i;
+echo json_encode(array('suggestions'=>$v52));
 exit;
 }
-/**
-* Checks if a command is an internal one, executes it if it is, returns null
-* if it isnt.
-* @global array $REGISTERED_FUNCTIONS
-* @param type $statement
-* @return type
-*/
-private function processInternalCommand($statement){
-global $REGISTERED_FUNCTIONS;
-$statement = explode(' ', $statement,2);
-$cmd = $statement[0];
-$args = @$statement[1];
-if(isset($REGISTERED_FUNCTIONS[$cmd])){
+private function v49($v54){
+$v54 = explode(' ', $v54,2);
+$cmd = $v54[0];
+$v0 = @$v54[1];
+if(isset($GLOBALS['REGISTERED_FUNCTIONS'][$cmd])){
 ob_start();
-$commandFunc = $REGISTERED_FUNCTIONS[$cmd]['function'];
-$commandFunc($args);
+$v55 = $GLOBALS['REGISTERED_FUNCTIONS'][$cmd]['function'];
+$v55($v0);
 return ob_get_clean();
 }
 return null;
 }
-/**
-* Return information about the shell to the client.
-* Current working dir, prompt format, motd.
-* @return type
-*/
-private function getShellInfo(){
+private function v12(){
 return array(
 'cwd' => getcwd(),
-'motd' => $this->getMotd(),
+'motd' => $this->v56(),
 'user' => function_exists('posix_getlogin')
 ? posix_getlogin()
 : (
-(function_exists('shell_exec') && PS::iW())
+(function_exists('shell_exec') && PHPShell::isWindows())
 ? trim(shell_exec('echo %USERNAME%'))
 : '?'
 ),
-'mode' => $GLOBALS['PC']['MODE'],
+'mode' => $GLOBALS['PHPSHELL_CONFIG']['MODE'],
 'hostname' => function_exists('gethostname') ? gethostname() : 'unknown-host',
-'prompt_style' => $GLOBALS['PC'][PS::iW()?'WIN_PROMPT':'NIX_PROMPT']
+'prompt_style' => $GLOBALS['PHPSHELL_CONFIG'][PHPShell::isWindows()?'WIN_PROMPT':'NIX_PROMPT']
 );
 }
-/**
-* Return the MOTD for the shell.
-* @return string
-*/
-private function getMotd(){
-$motd = 'PHP-Shell - '.php_uname();
-if(isset($GLOBALS['PC']['MOTD']))
-$motd .= "\n\n".$GLOBALS['PC']['MOTD']."\n";
-$motd .= "\nEnter 'help' to get started.";
-return $motd;
+private function v56(){
+$v57 = 'PHP-Shell - '.php_uname();
+if(isset($GLOBALS['PHPSHELL_CONFIG']['MOTD']))
+$v57 .= "\n\n".$GLOBALS['PHPSHELL_CONFIG']['MOTD']."\n";
+$v57 .= "\nEnter 'help' to get started.";
+return $v57;
 }
-/**
-* Returns true if OS is WIN else false and *NIX is assumed.
-* @return type
-*/
-public static function iW(){
+public static function isWindows(){
 return strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
 }
 }
 ?>
 <?php
-function ps_cd($args){
-$args = PS::strToArgv($args);
-$args = $args[0];
-if(file_exists($args))
-chdir($args);
-elseif(file_exists(getcwd().'/'.$args))
-chdir(getcwd().'/'.$args);
+function phpshell_cd($v0){
+$v0 = PHPShell::strToArgv($v0);
+$v0 = $v0[0];
+if(file_exists($v0))
+chdir($v0);
+elseif(file_exists(getcwd().'/'.$v0))
+chdir(getcwd().'/'.$v0);
 echo 'Changed directory to: '.getcwd();
 }
-rC('ps_cd','cd','Change directory');
-function ps_wget($args){
-$args = PS::strToArgv($args);
-if(isset($args[0]) && filter_var($args[0],FILTER_VALIDATE_URL) !== FALSE){
-$filename = $args[1] ? $args[1] : pathinfo($args[0],PATHINFO_FILENAME);
-echo "Downloading: $args[0]...\n";
-file_put_contents($filename, file_get_contents($args[0]));
-echo "Saved download as '$filename'\n";
+registerCommand('phpshell_cd','cd','Change directory');
+function phpshell_wget($v0){
+$v0 = PHPShell::strToArgv($v0);
+if(isset($v0[0]) && filter_var($v0[0],FILTER_VALIDATE_URL) !== FALSE){
+$v58 = $v0[1] ? $v0[1] : pathinfo($v0[0],PATHINFO_FILENAME);
+echo "Downloading: $v0[0]...\n";
+file_put_contents($v58, file_get_contents($v0[0]));
+echo "Saved download as '$v58'\n";
 } else echo "Invalid url\n";
 }
-rC('ps_wget','dl','Download file \'dl source dest\'');
-function ps_eval($args){
-if(preg_match('#;|echo\b|print[ (]|return#', $args))
-eval($args);
+registerCommand('phpshell_wget','dl','Download file \'dl source dest\'');
+function phpshell_eval($v0){
+if(preg_match('#;|echo\b|print[ (]|return#', $v0))
+eval($v0);
 else
-var_dump(eval("return $args;"));
+var_dump(eval("return $v0;"));
 }
-rC('ps_eval','eval','PHP eval()');
-function ps_help($args){
-foreach($GLOBALS['REGISTERED_FUNCTIONS'] as $cmd => $info){
+registerCommand('phpshell_eval','eval','PHP eval()');
+function phpshell_help($v0){
+foreach($GLOBALS['REGISTERED_FUNCTIONS'] as $cmd => $v59){
 echo str_pad($cmd, 25);
-echo $info['help'];
+echo $v59['help'];
 echo "\n";
 }
 }
-rC('ps_help','help','The command you just called');
-function ps_lc($args){
-echo count(file($args));
+registerCommand('phpshell_help','help','The command you just called');
+function phpshell_lc($v0){
+echo count(file($v0));
 }
-if(PS::iW())
-rC('ps_lc','lc','line count');
-function _ls_formatbytes($bytes, $precision = 2) {
-$units = array('B ', 'KB', 'MB', 'GB', 'TB');
-$bytes = max($bytes, 0);
-$pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-$pow = min($pow, count($units) - 1);
-$bytes /= pow(1024, $pow);
-return round($bytes, $precision) . ' ' . $units[$pow];
+if(PHPShell::isWindows())
+registerCommand('phpshell_lc','lc','line count');
+function _ls_formatbytes($v60, $v61 = 2) {
+$v62 = array('B ', 'KB', 'MB', 'GB', 'TB');
+$v60 = max($v60, 0);
+$pow = floor(($v60 ? log($v60) : 0) / log(1024));
+$pow = min($pow, count($v62) - 1);
+$v60 /= pow(1024, $pow);
+return round($v60, $v61) . ' ' . $v62[$pow];
 }
-function ps_ls($ls){
-foreach(glob($ls ? $ls : '*') as $file){
+function phpshell_ls($ls){
+foreach(glob($ls ? $ls : '*') as $v65){
 echo str_pad(
-is_dir($file)
+is_dir($v65)
 ? '--DIR--'
-: _ls_formatbytes(filesize($file)),10,' ',STR_PAD_LEFT)
-. " " . $file . "\n";
+: _ls_formatbytes(filesize($v65)),10,' ',STR_PAD_LEFT)
+. " " . $v65 . "\n";
 }
 }
-if(PS::iW())
-rC('ps_ls','ls','List directory content');
+if(PHPShell::isWindows())
+registerCommand('phpshell_ls','ls','List directory content');
 else
-rC('ps_ls','list','List directory content');
-function ps_build_util($args){
-$args = PS::strToArgv($args);
-$replace = in_array('--replace', $args);
-$keep = in_array('--keep', $args);
-$addons = array();
-$without = in_array('without', $args);
-$with = in_array('with', $args);
-$dest = false;
-foreach($args as $a){
-if(preg_match("#^--dest=(.+)#", $a, $dest)){
-$dest = $dest[1];
+registerCommand('phpshell_ls','list','List directory content');
+function phpshell_build_util($v0){
+$v0 = PHPShell::strToArgv($v0);
+print_r($v0);
+$v66 = in_array('--replace', $v0);
+$v67 = in_array('--keep', $v0);
+$gz = in_array('--gz', $v0);
+$v69 = array();
+$v70 = in_array('without', $v0);
+$v71 = in_array('with', $v0);
+$v72 = false;
+foreach($v0 as $a){
+if(preg_match("#^--dest=(.+)#", $a, $m)){
+$v72 = $m[1];
 }
 }
-if($replace && $GLOBALS['ps_min']){
-$dest = $GLOBALS['ps_path'];
+if($v66 && $GLOBALS['phpshell_min']){
+$v72 = $GLOBALS['phpshell_path'];
 }
-if(count($args) < 2 || !($keep || $dest)){
+if(count($v0) < 2 || !($v67 || $v72)){
 echo "\nYou must at least specify all addons or include / exclude and either --keep, --replace or --dest. --replace and --dest will only keep gz comp if it can";
 echo "\nExamples: ";
 echo "\nqpk rebuild with cd ls qedit qget qput qpk --replace #Replace current phpshell with light custom version";
@@ -855,34 +710,38 @@ echo "\nqpk rebuild without qpk screenprint txttoart --keep #Keep build folder a
 echo "\nqpk rebuild all --dest=/move/build/here #build with all addons and move build files to dest";
 exit;
 }
-$build_dir = "build_phpshell/php-shell-master";
-$addon_dir = "$build_dir/addons";
-copy('https://github.com/EJTH/php-shell/archive/master.zip','ps_master.zip');
-_unzip('ps_master.zip', 'build_phpshell/');
+$v75 = "build_phpshell/php-shell-master";
+$v76 = "$v75/addons";
+copy('https://github.com/EJTH/php-shell/archive/master.zip','phpshell_master.zip');
+_unzip('phpshell_master.zip', 'build_phpshell/');
 if(file_exists('build_phpshell/')){
 echo "\nBuilding...\n";
-foreach(glob("$addon_dir/*.php") as $a){
+foreach(glob("$v76/*.php") as $a){
 $a = pathinfo($a, PATHINFO_FILENAME);
-$in_list = in_array($a, $args);
-if(($without && $in_list) || ($with && !$in_list)){
-unlink("$addon_dir/$a.php");
+$v77 = in_array($a, $v0);
+if(($v70 && $v77) || ($v71 && !$v77)){
+unlink("$v76/$a.php");
 } else {
-$addons[] = $a;
+$v69[] = $a;
 }
 }
-if(in_array('all', $args)) $addons = "all";
-echo "Building with addons: " . implode(", ",$addons);
-file_put_contents("$build_dir/phpshell-config.php",'<?php $GLOBALS[\'PC\'] = json_decode(\'' . json_encode($GLOBALS['PC']) . '\',true);?>');
-passthru("cd $build_dir/ && rm -f phpshell-min.php phpshell-min-gz.php && php phpshell-build.php && echo Succesfully build");
+if(in_array('all', $v0)) $v69 = "all";
+echo "Building with addons: " . implode(", ",$v69);
+file_put_contents("$v75/phpshell-config.php",'<?php $GLOBALS[\'PHPSHELL_CONFIG\'] = json_decode(\'' . json_encode($GLOBALS['PHPSHELL_CONFIG']) . '\',true);?>');
+passthru("cd $v75/ && rm -f phpshell-min.php phpshell-min-gz.php && php phpshell-build.php && echo Succesfully build");
 passthru('pwd');
-if($dest){
-copy("$build_dir/phpshell-min.php", $dest);
+if($v72){
+if(!$gz){
+copy("$v75/phpshell-min.php", $v72);
+} else {
+copy("$v75/phpshell-min-gz.php", $v72);
 }
-if(!$keep){
+}
+if(!$v67){
 echo "removing build dir";
 passthru("rm -rf build_phpshell");
 }
-unlink('ps_master.zip');
+unlink('phpshell_master.zip');
 }
 }
 function _unzip($s,$d){
@@ -894,116 +753,141 @@ $zip->close();
 return true;
 }
 }
-rC('ps_build_util','qbuild','Rebuild with addons');
+registerCommand('phpshell_build_util','qbuild','Rebuild with addons');
 ?>
 <?php   
-function ps_qedit($args){
-echo '<div class="qedit" data-file="'.htmlentities($args).'"><textarea>'.@str_replace(['<','>'],['&lt;','&gt;'],file_get_contents(realpath($args))).'</textarea><button class="save">Save</button></div>';
+function phpshell_qedit($v0){
+echo '<div class="qedit" data-file="'.htmlentities($v0).'"><textarea>'.@str_replace(['<','>'],['&lt;','&gt;'],file_get_contents(realpath($v0))).'</textarea><button class="save">Save</button></div>';
 }
 if(isset($_POST['qedit_content']) && isset($_POST['qedit_fn'])){
 echo file_put_contents($_POST['qedit_fn'],$_POST['qedit_content']);
 }
-rC('ps_qedit','qedit','Edit various data files. supported: txt');
+registerCommand('phpshell_qedit','qedit','Edit various data files. supported: txt');
 ?>
 <?php   
-$addon_path = $GLOBALS['ps_path'] . '/addons/';
-$addon = "https://raw.githubusercontent.com/EJTH/php-shell/master/addons/$addon.php";
-if(file_exists($addon_path)){
-error_level(E_ALL);
-if( copy($addon,$addon_path . $args[1]) ){
-echo "Installed $addon";
+$v85 = pathinfo($GLOBALS['phpshell_path'], PATHINFO_DIRNAME) . '/phpshell_addons/';
+foreach(glob("$v85/*.php") as $a){
+include_once $a;
 }
-echo "Failed to install $addon";
+function phpshell_qpk($v0){
+$v0 = PHPShell::strToArgv($v0);
+switch($v0[0]){
+case 'install':
+$v86 = $v0[1];
+$v85 = pathinfo($GLOBALS['phpshell_path'], PATHINFO_DIRNAME) . '/phpshell_addons/';
+$v87 = "https://raw.githubusercontent.com/EJTH/php-shell/master/addons/$v86.php";
+if(!file_exists($v85)) mkdir($v85);
+if(file_exists($v85)){
+error_reporting(E_ALL);
+if( copy($v87,$v85 . $v0[1] . '.php') ){
+echo "Installed $v87";
 } else {
-echo "No addon folder found. Please create writeable directory at $addon_path";
+echo "Failed to install $v87";
 }
-rC('ps_qpk','qpk','Manage addons (list | install | remove)');
+} else {
+echo "No addon folder found. Please create writeable directory at $v85";
+}
+break;
+case 'list':
+$v88 = explode("\n",file_get_contents("https://raw.githubusercontent.com/EJTH/php-shell/master/qpk_list"));
+foreach($v88 as $a){
+if(strpos($a, $v0[1]) !== false || empty($v0[1])){
+echo "\n$a";
+}
+}
+break;
+default:
+echo "list | install | remove";
+break;
+}
+}
+registerCommand('phpshell_qpk','qpk','Manage addons (list | install | remove)');
 ?>
 <?php   
-function ps_qput($args){
+function phpshell_qput($v0){
 echo '<iframe src="?qputfrm=1&cwd='. urlencode($_POST['cwd']) .'"><iframe>';
 }
-function ps_qput_frm(){
+function phpshell_qput_frm(){
 echo '<form method="post" enctype="multipart/form-data"><input type="hidden" name="cwd" value"'.htmlentities($_GET['cwd']).'" /><input onchange="this.parentNode.submit();" type="file" name="qput" /></form>';
 }
-if(isset($_FILES['qput'])){
-move_uploaded_file($_FILES['qput']['tmp_name'], $_FILES['qput']['name']);
+if(isset($v89['qput'])){
+move_uploaded_file($v89['qput']['tmp_name'], $v89['qput']['name']);
 }
 if(isset($_GET['qputfrm'])){
-ps_qput_frm();
+phpshell_qput_frm();
 exit;
 }
-rC('ps_qput','qput','Put file(s)');
+registerCommand('phpshell_qput','qput','Put file(s)');
 ?>
 <?php   
-function ps_qwget($args){
-$args = PS::strToArgv($args);
-if(count($args) == 0){
+function phpshell_qwget($v0){
+$v0 = PHPShell::strToArgv($v0);
+if(count($v0) == 0){
 echo "Usage: qwget URL [FILE]";
 } else {
-$http_handle = fopen($args[0], "r");
-$fn = isset($args[1]) ? $args[1]
-: pathinfo($args[1], PATHINFO_BASENAME);
-$file_handle = fopen($fn, 'w');
-if($http_handle === FALSE) echo "Failed to get url: " + $args[0];
-if($file_handle === FALSE) echo "Failed to get create file: " + $args[1];
-while (!feof($http_handle)) {
+$v90 = fopen($v0[0], "r");
+$fn = isset($v0[1]) ? $v0[1]
+: pathinfo($v0[1], PATHINFO_BASENAME);
+$v92 = fopen($fn, 'w');
+if($v90 === FALSE) echo "Failed to get url: " + $v0[0];
+if($v92 === FALSE) echo "Failed to get create file: " + $v0[1];
+while (!feof($v90)) {
 echo ".";
-fwrite($file_handle, fread($http_handle, 512));
+fwrite($v92, fread($v90, 512));
 }
 echo "Downloaded file to: $fn";
-fclose($file_handle);
+fclose($v92);
 }
 }
 if(isset($_POST['qedit_content']) && isset($_POST['qedit_fn'])){
 echo file_put_contents($_POST['qedit_fn'],$_POST['qedit_content']);
 }
-rC('ps_qwget','qwget','When you need curl or wget, but neither are there.');
+registerCommand('phpshell_qwget','qwget','When you need curl or wget, but neither are there.');
 ?>
 <?php
-function ps_prntscrn($args){
+function phpshell_prntscrn($v0){
 echo '<img src="?printscreen='.time().'" alt="[LOADING SCREENSHOT]" style="max-width:80%" />';
 }
 if(isset($_GET['printscreen'])){
 $im = imagegrabscreen();
 imagepng($im);
 }
-if(PS::iW())
-rC('ps_prntscrn','prntscrn','Print screenshot to shell');
-function ps_tail($args){
-$data = file($args);
-if(!$data){
-echo 'Could not open file:'.$args;
+if(PHPShell::isWindows())
+registerCommand('phpshell_prntscrn','prntscrn','Print screenshot to shell');
+function phpshell_tail($v0){
+$v42 = file($v0);
+if(!$v42){
+echo 'Could not open file:'.$v0;
 return;
 }
-$modifier = array();
+$v94 = array();
 $lc = 25;
-if(preg_match("#-n ([0-9]+)#", $args, $modifier)){
-$lc = $modifier[1];
+if(preg_match("#-n ([0-9]+)#", $v0, $v94)){
+$lc = $v94[1];
 }
-$count = count($data);
-for($i=max($count-$lc,0);$i<$count;$i++){
-echo str_pad($i+1,5).htmlentities($data[$i]);
+$v96 = count($v42);
+for($i=max($v96-$lc,0);$i<$v96;$i++){
+echo str_pad($i+1,5).htmlentities($v42[$i]);
 }
 }
-if(PS::iW())
-rC('ps_tail','tail','Get last lines from file (-n [lc])');
-function ps_txt2art($i,$ret=false){
-$args = PS::strToArgv($i);
-$str = utf8_decode($args[0]);
-$font = @$args[1] ? $args[1] : 5;
-$imW = strlen($str)* imagefontwidth($font);
-$imH = imagefontheight($font);
+if(PHPShell::isWindows())
+registerCommand('phpshell_tail','tail','Get last lines from file (-n [lc])');
+function phpshell_txt2art($i,$ret=false){
+$v0 = PHPShell::strToArgv($i);
+$str = utf8_decode($v0[0]);
+$v98 = @$v0[1] ? $v0[1] : 5;
+$imW = strlen($str)* imagefontwidth($v98);
+$imH = imagefontheight($v98);
 $im = imagecreate($imW,$imH);
 $bg = imagecolorallocate($im, 255, 255, 255);
-$textcolor = imagecolorallocate($im, 0, 0, 0);
-$char = @$args[2] ? $args[2] : '#';
-$bgChar = @$args[3] ? $args[3] : ' ';
-imagestring($im, $font, 0, 0, $str, $textcolor);
+$v102 = imagecolorallocate($im, 0, 0, 0);
+$v103 = @$v0[2] ? $v0[2] : '#';
+$v104 = @$v0[3] ? $v0[3] : ' ';
+imagestring($im, $v98, 0, 0, $str, $v102);
 $out = '';
 for($y = 0; $y<$imH; $y++){
 for($x = 0; $x < $imW; $x++){
-$out .= (imagecolorat($im, $x, $y) == $textcolor) ? $char: $bgChar;
+$out .= (imagecolorat($im, $x, $y) == $v102) ? $v103: $v104;
 }
 $out .= "\n";
 }
@@ -1013,23 +897,23 @@ if(file_put_contents('txt2art.out',$out)){
 echo "\nSaved to: txt2art.out";
 }
 }
-rC('ps_txt2art','txt2art','String to "ascii-art"');
-function ps_view($args){
-if(file_exists($args)){
-$ext = pathinfo($args,PATHINFO_EXTENSION);
+registerCommand('phpshell_txt2art','txt2art','String to "ascii-art"');
+function phpshell_view($v0){
+if(file_exists($v0)){
+$ext = pathinfo($v0,PATHINFO_EXTENSION);
 switch($ext){
 case 'jpg':
 case 'jpeg':
 case 'png':
 case 'bmp':
 case 'gif':
-$info = getimagesize($args);
-echo '<img src="?view_img='.urlencode(realpath($args)).'" style="max-width:80%" />';
-echo "\n$info[mime] ($info[0] x $info[1])";
+$v59 = getimagesize($v0);
+echo '<img src="?view_img='.urlencode(realpath($v0)).'" style="max-width:80%" />';
+echo "\n$v59[mime] ($v59[0] x $v59[1])";
 break;
 default:
-$lines = file($args);
-foreach($lines as $l => $s){
+$v109 = file($v0);
+foreach($v109 as $l => $s){
 echo str_pad($l+1,8).htmlentities($s);
 }
 break;
@@ -1039,7 +923,7 @@ break;
 if(isset($_GET['view_img'])){
 echo file_get_contents($_GET['view_img']);
 }
-rC('ps_view','view','View various data files. supported: jpeg, png, bmp, gif, txt, php');
+registerCommand('phpshell_view','view','View various data files. supported: jpeg, png, bmp, gif, txt, php');
 $GLOBALS['__JS'] = <<<JSHERE
 \$(function(){
 PHPShell.onCommand(function(statement){
@@ -1059,12 +943,12 @@ PHPShell.writeln(this);
 })
 \$(function(){
 \$(document).on('click','.qedit .save', function(e){
-var \$editor = \$(this.parentNode);
+var \$v111 = \$(this.parentNode);
 \$.post(window.location.href,{
-qedit_content : \$editor.find('textarea').val(),
-qedit_fn : \$editor.data('file')
+qedit_content : \$v111.find('textarea').val(),
+qedit_fn : \$v111.data('file')
 }, function(){
-\$editor.replaceWith('Saved');
+\$v111.replaceWith('Saved');
 });
 });
 })
@@ -1116,4 +1000,4 @@ a {
 color:#fff;
 }
 CSSHERE;
-$GLOBALS['phpshell'] = new PS(); ?>
+$GLOBALS['phpshell'] = new PHPShell(); ?>

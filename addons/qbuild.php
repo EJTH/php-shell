@@ -1,6 +1,7 @@
 <?php
 function phpshell_build_util($args){
   $args = PHPShell::strToArgv($args);
+  print_r($args);
   $replace = in_array('--replace', $args);
   $keep = in_array('--keep', $args);
 
@@ -13,8 +14,8 @@ function phpshell_build_util($args){
   $dest = false;
 
   foreach($args as $a){
-    if(preg_match("#^--dest=(.+)#", $a, $dest)){
-      $dest = $dest[1];
+    if(preg_match("#^--dest=(.+)#", $a, $m)){
+      $dest = $m[1];
     }
   }
 
