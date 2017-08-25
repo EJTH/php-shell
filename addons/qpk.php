@@ -3,6 +3,7 @@ $addon_path = pathinfo($GLOBALS['phpshell_path'], PATHINFO_DIRNAME) . '/phpshell
 foreach(glob("$addon_path/*.php") as $a){
   include_once $a;
 }
+
 function phpshell_qpk($args){
   $args = PHPShell::strToArgv($args);
   switch($args[0]){
