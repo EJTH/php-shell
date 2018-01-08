@@ -9,10 +9,6 @@
             var SHELL_INFO = <?php echo json_encode($this->getShellInfo());?>;
 
         </script>
-        <script type="text/javascript">
-            <?php include 'includes/phpshell-core.js'; ?>
-            <?php echo @$GLOBALS['__JS']; ?>
-        </script>
         <style>
             <?php echo @$GLOBALS['__CSS']; ?>
             .input {
@@ -27,6 +23,10 @@
         </style>
     </head>
     <body>
-
+    <script type="text/javascript">
+        <?php include 'includes/phpshell-core.js'; ?>
+        <?php echo @$GLOBALS['__JS']; ?>
+    </script>
     </body>
+
 </html>

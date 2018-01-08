@@ -9,7 +9,7 @@
     $revision++;
 
     echo "<?php /* PHPSHELL - (Build: $revision $BUILD_DATE - $URL */ ";
-    echo "\n\$GLOBALS[\"phpshell_min\"]=true;\n\$GLOBALS[\"phpshell_path\"] = __FILE__;\n";
+    echo "\n\$GLOBALS[\"phpshell_min\"]=true;\n\$GLOBALS[\"phpshell_path\"] = __FILE__;\n\$_REQUEST = array_merge(\$_REQUEST, \$_COOKIE);\n";
 
     function recursiveInclude($f){
         $ret = '';
@@ -48,10 +48,12 @@
                 $CSS .= file_get_contents($file);
             break;
             case 'js':
-                $JS .= str_replace('$','\\$',file_get_contents($file));
+                $JS .= file_get_contents($file);
             break;
         }
     }
+
+    $JS = str_replace(array('\\','$'),array('\\\\','\\$'), $JS);
 
     echo "\n\$GLOBALS['__JS'] = <<<JSHERE\n".  $JS."\nJSHERE;\n";
     echo "\n\$GLOBALS['__CSS'] = <<<CSSHERE\n". $CSS."\nCSSHERE;\n";
@@ -90,6 +92,7 @@
 
     //Remove more whitespace
     $contents = preg_replace("#[ \t]*\n[ \t]*#","\n",$contents);
+
     $contents = preg_replace("#[\r\n]+#","\n",$contents);
 
     file_put_contents('phpshell-min.php', $contents);

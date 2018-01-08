@@ -28,7 +28,8 @@ $GLOBALS['PHPSHELL_CONFIG'] = array(
      *
      *
      */
-    'MODE'              => 'interactive-stdin',
+    'MODE'              => 'shell_exec',
+    'REQUEST_MODE'      => 'stealth',
 
     /*
      * Prompt layout:
@@ -38,8 +39,8 @@ $GLOBALS['PHPSHELL_CONFIG'] = array(
      * %user%       The user running phpshell
      */
 
-    'WIN_PROMPT'        => '%cwd%> ', //Classic DOS style
-    //'WIN_PROMPT'        => '(%user%@%hostname%) %cwd%>',
+    'WIN_PROMPT'        => '%cwd%> ', // Classic DOS style
+    // 'WIN_PROMPT'        => '(%user%@%hostname%) %cwd%>',
 
     'NIX_PROMPT'        => '%user%@%hostname%:%cwd% #',
 
@@ -48,8 +49,8 @@ $GLOBALS['PHPSHELL_CONFIG'] = array(
      * You might want to protect PHPShell with simple http authentication
      */
     'USE_AUTH'          => true,
-    'AUTH_USERNAME'     => 'test123',
-    'AUTH_PASSWORD'     => 'test123',
+    'AUTH_USERNAME'     => 'test12345',
+    'AUTH_PASSWORD'     => 'test12345',
 
     'ENV' => array(
         'WIN' => array(),

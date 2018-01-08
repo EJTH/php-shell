@@ -26,9 +26,9 @@ function phpshell_build_util($args){
   if(count($args) < 2 || !($keep || $dest)){
     echo "\nYou must at least specify all addons or include / exclude and either --keep, --replace or --dest. --replace and --dest will only keep gz comp if it can";
     echo "\nExamples: ";
-    echo "\nqpk rebuild with cd ls qedit qget qput qpk --replace #Replace current phpshell with light custom version";
-    echo "\nqpk rebuild without qpk screenprint txttoart --keep  #Keep build folder and build a semi bloated version without qpk, screenprint and txttoart";
-    echo "\nqpk rebuild all --dest=/move/build/here              #build with all addons and move build files to dest";
+    echo "\nqbuild rebuild with cd ls qedit qget qput qpk --replace #Replace current phpshell with light custom version";
+    echo "\nqbuild rebuild without qpk screenprint txttoart --keep  #Keep build folder and build a semi bloated version without qpk, screenprint and txttoart";
+    echo "\nqbuild rebuild all --dest=/move/build/here              #build with all addons and move build files to dest";
     exit;
   }
 
@@ -55,15 +55,17 @@ function phpshell_build_util($args){
     echo "Building with addons: " . implode(", ",$addons);
     file_put_contents("$build_dir/phpshell-config.php",'<?php $GLOBALS[\'PHPSHELL_CONFIG\'] = json_decode(\'' . json_encode($GLOBALS['PHPSHELL_CONFIG']) . '\',true);?>');
 
-    passthru("cd $build_dir/ && rm -f phpshell-min.php phpshell-min-gz.php && php phpshell-build.php && echo Succesfully build");
+    passthru("cd $build_dir/ && rm -f phpshell-min.php phpshell-min-gz.php && php phpshell-build.php");
+    echo "\nSuccesfully build\n";
 
     if($dest){
+      echo $dest;
       if(!$gz){
-        unlink("$build_dir/phpshell-min.php");
         copy("$build_dir/phpshell-min.php", $dest);
+        unlink("$build_dir/phpshell-min.php");
       } else {
-        unlink("$build_dir/phpshell-min-gz.php");
         copy("$build_dir/phpshell-min-gz.php", $dest);
+        unlink("$build_dir/phpshell-min-gz.php");
       }
 
     }

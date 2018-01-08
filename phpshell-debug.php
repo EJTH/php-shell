@@ -6,6 +6,8 @@
 
     $GLOBALS['phpshell_path'] = __FILE__;
 
+    $_REQUEST = array_merge($_REQUEST, $_COOKIE);
+
     $it = new RecursiveDirectoryIterator("addons/");
 
     foreach(new RecursiveIteratorIterator($it) as $file)

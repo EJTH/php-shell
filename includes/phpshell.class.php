@@ -8,7 +8,7 @@ $args=PHPShell::getArgvAssoc();
 
 function alt_auth(){
   ?>
-  <form method="POST">
+  <form method="<?php echo $GLOBALS['PHPSHELL_CONFIG']['MODE'] == 'post' ? 'post' : 'get';?>">
     <input type="password" name="psauth"><input type="submit" value="Enter" />
   </form>
   <?php
@@ -16,7 +16,7 @@ function alt_auth(){
 }
 
 if(@$GLOBALS['PHPSHELL_CONFIG']['USE_AUTH'] && !isset($args['cmd'])){
-    if(@$_POST['psauth'] == $GLOBALS['PHPSHELL_CONFIG']['AUTH_PASSWORD']
+    if(@$_REQUEST['psauth'] == $GLOBALS['PHPSHELL_CONFIG']['AUTH_PASSWORD']
       || @$_COOKIE['psauth'] == md5($GLOBALS['PHPSHELL_CONFIG']['AUTH_PASSWORD'])){
         setcookie('psauth', md5($GLOBALS['PHPSHELL_CONFIG']['AUTH_PASSWORD']),time()+3600);
     } else {
@@ -80,22 +80,16 @@ class PHPShell {
         /*
          * If no CLI arguments are catched, we respond to client requests.
          */
-        if(isset($_POST['cwd'])){
+        if(isset($_REQUEST['cwd'])){
             chdir($_REQUEST['cwd']);
         }
-        if(isset($_POST['action'])){
-            switch($_POST['action']){
+        if(isset($_REQUEST['action'])){
+            switch($_REQUEST['action']){
                 case 'exec':
-                    $this->runCommand($_POST['cmd'],@$_POST['mode']);
+                    $this->runCommand($_REQUEST['cmd'],@$_REQUEST['mode']);
                 break;
                 case 'suggest':
-                    $this->tabSuggest($_POST['input']);
-                break;
-                case 'proc':
-                    $this->readProc($_POST['handle']);
-                break;
-                case 'stdin':
-                    $this->stdinToProc($_POST['stdin'],$_POST['handle']);
+                    $this->tabSuggest($_REQUEST['input']);
                 break;
                 default:
                     echo json_encode(array('error' => 'Unknown action.'));
@@ -116,129 +110,6 @@ class PHPShell {
 
         exit;
 
-    }
-
-    private $proc;
-    private $pipes;
-    private $handle;
-
-    /**
-     * Starts a command as an async proc. that will run forever.
-     * This is done by calling phpshell from within a shell to create a worker thread
-     * that can feed the client with output and feed the process with client input.
-     * @param type $cmd
-     */
-    private function startAsyncProc($cmd){
-        // Make a unique handle name.
-        $handle = md5($cmd.time());
-
-        $this->handle = $handle;
-
-        file_put_contents($this->getTmpFile('stdout'), '');
-
-        $args = array(
-            'handle' => $handle,
-            'cmd'   => $cmd,
-            'cwd'    => getcwd()
-        );
-
-        $c =  // PHP executable path
-              $this->getPhpPath()." "
-              // Self path
-              . $GLOBALS['phpshell_path']
-              // Arguments
-              . self::arrayToArgs($args);
-
-        echo json_encode(array('handle'=>$handle,'cwd'=>getcwd()));
-        chdir(dirname($GLOBALS['phpshell_path']));
-
-        if(PHPShell::isWindows()){
-            pclose(popen("start /MIN $c", "r"));
-        } else {
-            shell_exec("nohup $c > /dev/null 2>/dev/null &");
-        }
-
-        return $handle;
-    }
-
-    private static function arrayToArgs($arrArgs){
-      $str = '';
-      foreach($arrArgs as $k => $v){
-          $v = escapeshellarg($v);
-          $str .= " -$k $v";
-      }
-      return $str;
-    }
-
-    /**
-     * Attempts to find the path to the PHP executable on the system.
-     *
-     * @return type
-     */
-    private function getPhpPath(){
-        $pathTests = array();
-        $cachedResultFile = dirname(__FILE__).DIRECTORY_SEPARATOR.'phpshell-phpbin-path';
-
-        /* Return the path from config, if its specified. */
-        if(isset($GLOBALS['PHPSHELL_CONFIG']['PHP_PATH'])
-           && file_exists($GLOBALS['PHPSHELL_CONFIG']['PHP_PATH'])){
-            return $GLOBALS['PHPSHELL_CONFIG']['PHP_PATH'];
-        }
-
-        /* Check saved result of last getPhpPath, if it exists, return it */
-        $cachedPhpPath = @file_get_contents($cachedResultFile);
-        if($cachedPhpPath){
-            return $cachedPhpPath;
-        } else {
-            if(PHPShell::isWindows()){
-                $pathTests = array(
-                    'php',
-                    'c:\php\php.exe',
-                    'c:\php5\php.exe',
-                    'c:\xampp\php\php.exe',
-                    'c:\wamp\php\php.exe',
-                    'c:\program files\php\php.exe'
-
-                );
-            } else {
-                $pathTests = array(
-                    'php',
-                    'php-cli',
-                    '/bin/php',
-                    '/bin/php-cli',
-                    '/usr/bin/php',
-                    '/usr/bin/php-cli',
-                    '/Applications/MAMP/php/php',
-                );
-            }
-
-            foreach($pathTests as $p){
-                $r = shell_exec($p.' -v');
-                if($r){
-                    /* php executable was found */
-                    file_put_contents($cachedResultFile, $p);
-                    return $p;
-                }
-            }
-        }
-        file_put_contents($this->getTmpFile('stdout'), "\nERROR: Could not find php executable.".
-                "\nIf you now where it is you can specify it in phpshell-config.php or with the xphppath command\n".
-                PHPSHELL_EOF_MARK);
-
-        return 'php';
-    }
-
-    /**
-     * Sends stdin to the stdin tempfile
-     * STDIN does not work reliably on proc_open so it is essentially unused
-     * @param type $stdin
-     * @param type $proc
-     */
-    private function stdinToProc($stdin,$handle){
-        $this->handle = $handle;
-        $stdinStr = str_replace("\r", "\n", $stdin);
-
-        file_put_contents($this->getTmpFile('stdin'), $stdinStr,FILE_APPEND);
     }
 
     /**
@@ -265,130 +136,6 @@ class PHPShell {
         return $arguments;
     }
 
-
-    /**
-     * Return the full path to the specified tempfile.
-     * @param type $pipe
-     * @return type
-     */
-    private function getTmpFile($pipe){
-        return dirname(__FILE__).DIRECTORY_SEPARATOR.$this->handle.'-'.$pipe;
-    }
-
-    /**
-     * Spawns a new process in that runs indefinetely and pipe output to a tempfile.
-     * @param type $cmd
-     */
-    private function spawnProcess($cmd,$handle){
-        $this->handle = $handle;
-
-        file_put_contents($this->getTmpFile('stdout'), '');
-        file_put_contents($this->getTmpFile('stdin'),'');
-
-        $descriptors = array(
-           0 => array("pipe", "r"),
-           1 => array("file", $this->getTmpFile('stdout'),"a"),  //  stdout is a pipe that the child will write to
-           2 => array("file", $this->getTmpFile('stdout'),"a"), //  stderr is a file to write to
-        );
-
-        foreach($GLOBALS['PHPSHELL_CONFIG'][self::isWindows()?'WIN':'NIX']['ENV'] as $k => $env){
-          putenv("$k=$env");
-        }
-
-        // Run the command
-        $this->proc = proc_open($cmd, $descriptors, $this->pipes, getcwd());
-
-        // Wait a little for the process to open and begin filling stdout
-        // usleep(250000);
-
-        $pinfo = proc_get_status($this->proc);
-        $terminate = false;
-        while($pinfo['running']){
-            echo '.';
-
-            // End process on client timeout
-            // first clear statcache if long enough time has passed since the last stat
-            if(time() - filemtime($this->getTmpFile('stdin')) > 60){
-                clearstatcache(true, $this->getTmpFile('stdin'));
-            }
-            if(time() - filemtime($this->getTmpFile('stdin')) > 60){
-                $terminate = true;
-                break;
-            }
-
-            $stdin = @file_get_contents($this->getTmpFile('stdin'));
-            if($stdin !== '' && $stdin !== false){
-
-                file_put_contents($this->getTmpFile('stdin'),'');
-                fwrite($this->pipes[0],$stdin);
-
-            } else {
-                usleep(250000);
-            }
-
-
-
-            $pinfo = proc_get_status($this->proc);
-
-        }
-        proc_close($this->proc);
-
-        if(!$terminate){
-            // Indicate to the client that the process has ended.
-            file_put_contents($this->getTmpFile('stdout'),PHPSHELL_EOF_MARK,FILE_APPEND);
-            sleep(1);
-        }
-        @unlink($this->getTmpFile('stdout'));
-
-
-        // remove stdin file:
-        @unlink($this->getTmpFile('stdin'));
-
-    }
-
-
-
-    /**
-     * reads the stdout tempfile and returns the result as json to the client.
-     * @param type $handle
-     */
-    public function readProc($handle){
-        $this->handle = $handle;
-        $data = "";
-        $eof = false;
-        $touchCounter = 0;
-
-        while($data === ""){
-            $data = @file_get_contents($this->getTmpFile('stdout'));
-
-            if($data)
-                file_put_contents($this->getTmpFile('stdout'), '');
-
-            usleep (500000);
-
-            // Touch the stdin file once in a while, this indicates
-            // to the process running that the client is still alive.
-            if($touchCounter == 0){
-                $touchCounter = 30;
-                touch($this->getTmpFile('stdin'));
-            }
-            $touchCounter--;
-        }
-        if(strpos($data, PHPSHELL_EOF_MARK) !== false){
-            $data = str_replace(PHPSHELL_EOF_MARK,'',$data);
-            @unlink($this->getTmpFile('stdout'));
-            @unlink($this->getTmpFile('stdin'));
-            $eof=true;
-        }
-
-        $detectedEncoding = mb_detect_encoding($data,mb_list_encodings(),true);
-        if($detectedEncoding != 'UTF-8'){
-            $data = iconv($detectedEncoding, 'UTF-8//TRANSLIT//IGNORE', $data);
-        }
-
-        echo json_encode(array('out' => htmlentities($data,null,'UTF-8'),'eof'=>$eof));
-    }
-
     public static function strToArgv($str, $keepQuotes=false){
         preg_match_all("#\"[^\"]+\"|'[^']+'|[^ ]++#", $str, $args);
 
@@ -412,14 +159,6 @@ class PHPShell {
           $html = false;
           if($mode=="shell_exec" || !$mode){
               $output = shell_exec($_REQUEST['cmd'].' 2>&1');
-          } elseif($mode=="exec") {
-              $return = -1;
-              $output = "";
-              exec($_REQUEST['cmd'].' 2>&1', $output, $return);
-              $output = implode($output,"\n");
-          } elseif($mode == "interactive") {
-              $this->startAsyncProc($cmd);
-              exit;
           }
         }
 
@@ -511,6 +250,7 @@ class PHPShell {
                     : '?'
                   ),
             'mode' =>  $GLOBALS['PHPSHELL_CONFIG']['MODE'],
+            'requestMode' => $GLOBALS['PHPSHELL_CONFIG']['REQUEST_MODE'],
             'hostname' => function_exists('gethostname') ? gethostname() : 'unknown-host',
             'prompt_style' => $GLOBALS['PHPSHELL_CONFIG'][PHPShell::isWindows()?'WIN_PROMPT':'NIX_PROMPT']
         );

